@@ -1,0 +1,27 @@
+package com.velocity.velocity.api.bike;
+
+import jakarta.persistence.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Entity
+@Table(name = "bike_models")
+public class BikeModel {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+    @Column(nullable = false, unique = true)
+    private String name;
+    @Column(nullable = false)
+    private String description;
+    @Column(nullable = false)
+    private float speed;
+    @Column(nullable = false)
+    private int range;
+    @Column(nullable = false)
+    private int capacity;
+    @OneToMany(mappedBy = "bikeModel", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<BikeInstance> bikeInstances = new ArrayList<>();
+}
