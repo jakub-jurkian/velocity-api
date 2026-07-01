@@ -2,12 +2,16 @@ package com.velocity.velocity.api.user;
 
 import com.velocity.velocity.api.reservation.Reservation;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "users")
 public class User {

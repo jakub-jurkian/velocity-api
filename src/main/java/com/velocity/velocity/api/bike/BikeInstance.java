@@ -2,14 +2,16 @@ package com.velocity.velocity.api.bike;
 
 import com.velocity.velocity.api.reservation.Reservation;
 import com.velocity.velocity.api.user.UserCity;
-import com.velocity.velocity.api.user.UserRole;
-import com.velocity.velocity.api.user.UserStatus;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "bike_instances")
 public class BikeInstance {

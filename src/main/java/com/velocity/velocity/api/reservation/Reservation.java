@@ -3,11 +3,15 @@ package com.velocity.velocity.api.reservation;
 import com.velocity.velocity.api.bike.BikeInstance;
 import com.velocity.velocity.api.user.User;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "reservations")
 public class Reservation {
