@@ -1,6 +1,7 @@
 package com.velocity.api.user;
 
 import com.velocity.api.reservation.Reservation;
+import com.velocity.api.shared.City;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,7 +35,7 @@ public class User {
     private UserRole role;
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private UserCity city;
+    private City city;
     @Column(nullable = false, updatable = false)
     private LocalDate joinedDate;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)

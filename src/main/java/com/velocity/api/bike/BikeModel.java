@@ -26,6 +26,7 @@ public class BikeModel {
     private int range;
     @Column(nullable = false)
     private int capacity;
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BikeCategory category;
     @OneToMany(mappedBy = "bikeModel", cascade = CascadeType.ALL, orphanRemoval = true)

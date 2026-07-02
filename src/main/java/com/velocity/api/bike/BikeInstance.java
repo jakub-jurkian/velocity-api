@@ -1,7 +1,7 @@
 package com.velocity.api.bike;
 
 import com.velocity.api.reservation.Reservation;
-import com.velocity.api.user.UserCity;
+import com.velocity.api.shared.City;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,7 +23,7 @@ public class BikeInstance {
     private BikeStatus status;
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private UserCity city;
+    private City city;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bike_model_id", nullable = false)
