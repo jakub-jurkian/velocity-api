@@ -5,6 +5,10 @@ spring:
     url: jdbc:postgresql://localhost:5432/velocity
     username: admin
     password: ${POSTGRES_PASSWORD:password}
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
 
 server:
   port: 8080

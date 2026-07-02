@@ -1,0 +1,12 @@
+# TARGET (local PostgreSQL database)
+url: jdbc:postgresql://localhost:5432/velocity
+username: admin
+password: password
+driver: org.postgresql.Driver
+
+# REFERENCE (Java Code)
+referenceUrl: hibernate:spring:com.velocity.api?dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# OUTPUT
+changeLogFile: src/main/resources/db/changelog/db.changelog-master.yaml
+diffChangeLogFile: src/main/resources/db/changelog/draft-migration.xml

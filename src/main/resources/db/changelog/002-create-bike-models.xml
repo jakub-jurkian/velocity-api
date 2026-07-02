@@ -1,0 +1,35 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet author="jakub-jurkian" id="create-bike_models-table">
+        <createTable tableName="bike_models">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="bike_modelsPK"/>
+            </column>
+            <column name="capacity" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="range" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="speed" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="jakub-jurkian" id="1782985087770-5">
+        <addUniqueConstraint columnNames="name" constraintName="UC_BIKE_MODELSNAME_COL" tableName="bike_models"/>
+    </changeSet>
+</databaseChangeLog>
