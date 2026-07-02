@@ -1,12 +1,13 @@
-package com.velocity.velocity.api.reservation;
+package com.velocity.api.reservation;
 
-import com.velocity.velocity.api.bike.BikeInstance;
-import com.velocity.velocity.api.user.User;
+import com.velocity.api.bike.BikeInstance;
+import com.velocity.api.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -19,9 +20,9 @@ public class Reservation {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     @Column(nullable = false)
-    private LocalDateTime startDate;
+    private LocalDate startDate;
     @Column(nullable = false)
-    private LocalDateTime endDate;
+    private LocalDate endDate;
     @Column(nullable = false)
     private BigDecimal totalCost;
     @Column(nullable = false)

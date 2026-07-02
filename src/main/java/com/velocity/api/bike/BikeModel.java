@@ -1,4 +1,4 @@
-package com.velocity.velocity.api.bike;
+package com.velocity.api.bike;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -21,11 +21,13 @@ public class BikeModel {
     @Column(nullable = false)
     private String description;
     @Column(nullable = false)
-    private float speed;
+    private int speed;
     @Column(nullable = false)
     private int range;
     @Column(nullable = false)
     private int capacity;
+    @Column(nullable = false)
+    private BikeCategory category;
     @OneToMany(mappedBy = "bikeModel", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<BikeInstance> bikeInstances = new ArrayList<>();
+    private List<BikeInstance> bikeInstances = new ArrayList<>();
 }

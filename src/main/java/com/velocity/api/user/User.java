@@ -1,11 +1,11 @@
-package com.velocity.velocity.api.user;
+package com.velocity.api.user;
 
-import com.velocity.velocity.api.reservation.Reservation;
+import com.velocity.api.reservation.Reservation;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -36,13 +36,13 @@ public class User {
     @Enumerated(EnumType.STRING)
     private UserCity city;
     @Column(nullable = false, updatable = false)
-    private LocalDateTime joinedDate;
+    private LocalDate joinedDate;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Reservation> reservations = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
-        this.joinedDate = LocalDateTime.now();
+        this.joinedDate = LocalDate.now();
     }
 
     public void addReservation(Reservation reservation) {

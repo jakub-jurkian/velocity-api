@@ -1,7 +1,7 @@
-package com.velocity.velocity.api.bike;
+package com.velocity.api.bike;
 
-import com.velocity.velocity.api.reservation.Reservation;
-import com.velocity.velocity.api.user.UserCity;
+import com.velocity.api.reservation.Reservation;
+import com.velocity.api.user.UserCity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,6 +18,7 @@ public class BikeInstance {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private BikeStatus status;
     @Column(nullable = false)
@@ -29,5 +30,5 @@ public class BikeInstance {
     private BikeModel bikeModel;
 
     @OneToMany(mappedBy = "bikeInstance", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<Reservation> reservations = new ArrayList<>();
+    private List<Reservation> reservations = new ArrayList<>();
 }
