@@ -1,0 +1,43 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="jakub-jurkian" id="create-user-table">
+        <createTable tableName="users">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="usersPK"/>
+            </column>
+            <column name="city" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="full_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="joined_date" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="password_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="phone" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="jakub-jurkian" id="add-unique-email-constraint">
+        <addUniqueConstraint columnNames="email" constraintName="UC_USERSEMAIL_COL" tableName="users"/>
+    </changeSet>
+    <changeSet author="jakub-jurkian" id="add-unique-phone-constraint">
+        <addUniqueConstraint columnNames="phone" constraintName="UC_USERSPHONE_COL" tableName="users"/>
+    </changeSet>
+</databaseChangeLog>
