@@ -1,4 +1,4 @@
-package com.velocity.velocity.api;
+package com.velocity.api;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
