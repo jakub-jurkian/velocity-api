@@ -1,7 +1,4 @@
 databaseChangeLog:
-  - preConditions:
-      - runningAs:
-          username: admin
   - include:
       file: db/changelog/001-create-users.xml
   - include:
