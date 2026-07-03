@@ -10,3 +10,5 @@ databaseChangeLog:
       file: db/changelog/003-create-bike-instances.xml
   - include:
       file: db/changelog/004-create-reservations.xml
+  - include:
+      file: db/changelog/005-insert-sample-data.xml

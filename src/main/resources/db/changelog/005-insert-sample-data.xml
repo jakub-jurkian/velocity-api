@@ -1,0 +1,225 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet author="velocity-dev" id="insert-sample-data" context="dev">
+
+        <!-- ═══════════════════════════════════ USERS ═══════════════════════════════════ -->
+
+        <insert tableName="users">
+            <column name="id"            value="11111111-1111-1111-1111-111111111111"/>
+            <column name="full_name"     value="Alice Smith"/>
+            <column name="email"         value="alice@velocity.com"/>
+            <column name="password_hash" value="hashed_pw_1"/>
+            <column name="phone"         value="+48123456789"/>
+            <column name="role"          value="CLIENT"/>
+            <column name="status"        value="ACTIVE"/>
+            <column name="city"          value="WARSAW"/>
+            <column name="joined_date"   valueDate="2026-06-01"/>
+        </insert>
+
+        <insert tableName="users">
+            <column name="id"            value="22222222-2222-2222-2222-222222222222"/>
+            <column name="full_name"     value="Bob Jones"/>
+            <column name="email"         value="bob@velocity.com"/>
+            <column name="password_hash" value="hashed_pw_2"/>
+            <column name="phone"         value="+48987654321"/>
+            <column name="role"          value="CLIENT"/>
+            <column name="status"        value="ACTIVE"/>
+            <column name="city"          value="WROCLAW"/>
+            <column name="joined_date"   valueDate="2026-06-15"/>
+        </insert>
+
+        <!-- BLOCKED user — tests that blocked users cannot book -->
+        <insert tableName="users">
+            <column name="id"            value="44444444-4444-4444-4444-444444444444"/>
+            <column name="full_name"     value="Dave Blocked"/>
+            <column name="email"         value="dave@velocity.com"/>
+            <column name="password_hash" value="hashed_pw_4"/>
+            <column name="phone"         value="+48111222333"/>
+            <column name="role"          value="CLIENT"/>
+            <column name="status"        value="BLOCKED"/>
+            <column name="city"          value="GDANSK"/>
+            <column name="joined_date"   valueDate="2026-05-01"/>
+        </insert>
+
+        <insert tableName="users">
+            <column name="id"            value="33333333-3333-3333-3333-333333333333"/>
+            <column name="full_name"     value="Charlie Admin"/>
+            <column name="email"         value="admin@velocity.com"/>
+            <column name="password_hash" value="hashed_pw_3"/>
+            <column name="phone"         value="+48000000000"/>
+            <column name="role"          value="ADMIN"/>
+            <column name="status"        value="ACTIVE"/>
+            <column name="city"          value="GDANSK"/>
+            <column name="joined_date"   valueDate="2026-01-01"/>
+        </insert>
+
+        <!-- ══════════════════════════════════ BIKE MODELS ══════════════════════════════════ -->
+
+        <insert tableName="bike_models">
+            <column name="id"          value="aaaa0000-aaaa-aaaa-aaaa-aaaaaaaaaaaa"/>
+            <column name="name"        value="Sprint Courier S1"/>
+            <column name="category"    value="AGILITY"/>
+            <column name="description" value="Lightweight city courier, agile enough to weave through traffic. Perfect for backpack delivery."/>
+            <column name="speed"       valueNumeric="45"/>
+            <column name="range"       valueNumeric="80"/>
+            <column name="capacity"    valueNumeric="40"/>
+        </insert>
+
+        <insert tableName="bike_models">
+            <column name="id"          value="bbbb0000-bbbb-bbbb-bbbb-bbbbbbbbbbbb"/>
+            <column name="name"        value="Endurance Pro 2.0"/>
+            <column name="category"    value="DUAL_BATTERY"/>
+            <column name="description" value="Built for the 10-hour shift. Dual-battery ensures you never run out during the dinner rush."/>
+            <column name="speed"       valueNumeric="35"/>
+            <column name="range"       valueNumeric="100"/>
+            <column name="capacity"    valueNumeric="60"/>
+        </insert>
+
+        <insert tableName="bike_models">
+            <column name="id"          value="cccc0000-cccc-cccc-cccc-cccccccccccc"/>
+            <column name="name"        value="Cargo King XL"/>
+            <column name="category"    value="HEAVY_DUTY"/>
+            <column name="description" value="10 pizzas? No problem. Features insulated front box and heavy-duty rear rack."/>
+            <column name="speed"       valueNumeric="25"/>
+            <column name="range"       valueNumeric="60"/>
+            <column name="capacity"    valueNumeric="100"/>
+        </insert>
+
+        <!-- ══════════════════════════════════ BIKE INSTANCES ══════════════════════════════════ -->
+
+        <!-- Warsaw — Sprint S1 (a) -->
+        <insert tableName="bike_instances">
+            <column name="id"            value="a1111111-1111-1111-1111-111111111111"/>
+            <column name="city"          value="WARSAW"/>
+            <column name="status"        value="ACTIVE"/>
+            <column name="bike_model_id" value="aaaa0000-aaaa-aaaa-aaaa-aaaaaaaaaaaa"/>
+        </insert>
+        <insert tableName="bike_instances">
+            <column name="id"            value="a2222222-2222-2222-2222-222222222222"/>
+            <column name="city"          value="WARSAW"/>
+            <column name="status"        value="ACTIVE"/>
+            <column name="bike_model_id" value="aaaa0000-aaaa-aaaa-aaaa-aaaaaaaaaaaa"/>
+        </insert>
+        <insert tableName="bike_instances">
+            <column name="id"            value="a3333333-3333-3333-3333-333333333333"/>
+            <column name="city"          value="WARSAW"/>
+            <column name="status"        value="MAINTENANCE"/>
+            <column name="bike_model_id" value="aaaa0000-aaaa-aaaa-aaaa-aaaaaaaaaaaa"/>
+        </insert>
+
+        <!-- Wroclaw — Endurance Pro (b) -->
+        <insert tableName="bike_instances">
+            <column name="id"            value="b1111111-1111-1111-1111-111111111111"/>
+            <column name="city"          value="WROCLAW"/>
+            <column name="status"        value="ACTIVE"/>
+            <column name="bike_model_id" value="bbbb0000-bbbb-bbbb-bbbb-bbbbbbbbbbbb"/>
+        </insert>
+        <insert tableName="bike_instances">
+            <column name="id"            value="b2222222-2222-2222-2222-222222222222"/>
+            <column name="city"          value="WROCLAW"/>
+            <column name="status"        value="ACTIVE"/>
+            <column name="bike_model_id" value="bbbb0000-bbbb-bbbb-bbbb-bbbbbbbbbbbb"/>
+        </insert>
+        <insert tableName="bike_instances">
+            <column name="id"            value="b3333333-3333-3333-3333-333333333333"/>
+            <column name="city"          value="WROCLAW"/>
+            <column name="status"        value="RETIRED"/>
+            <column name="bike_model_id" value="bbbb0000-bbbb-bbbb-bbbb-bbbbbbbbbbbb"/>
+        </insert>
+
+        <!-- Gdansk — Cargo King (c) -->
+        <insert tableName="bike_instances">
+            <column name="id"            value="c1111111-1111-1111-1111-111111111111"/>
+            <column name="city"          value="GDANSK"/>
+            <column name="status"        value="ACTIVE"/>
+            <column name="bike_model_id" value="cccc0000-cccc-cccc-cccc-cccccccccccc"/>
+        </insert>
+        <insert tableName="bike_instances">
+            <column name="id"            value="c2222222-2222-2222-2222-222222222222"/>
+            <column name="city"          value="GDANSK"/>
+            <column name="status"        value="LOST"/>
+            <column name="bike_model_id" value="cccc0000-cccc-cccc-cccc-cccccccccccc"/>
+        </insert>
+        <insert tableName="bike_instances">
+            <column name="id"            value="c3333333-3333-3333-3333-333333333333"/>
+            <column name="city"          value="GDANSK"/>
+            <column name="status"        value="ACTIVE"/>
+            <column name="bike_model_id" value="cccc0000-cccc-cccc-cccc-cccccccccccc"/>
+        </insert>
+
+        <!-- Poznan — Sprint S1 (d) -->
+        <insert tableName="bike_instances">
+            <column name="id"            value="d1111111-1111-1111-1111-111111111111"/>
+            <column name="city"          value="POZNAN"/>
+            <column name="status"        value="ACTIVE"/>
+            <column name="bike_model_id" value="aaaa0000-aaaa-aaaa-aaaa-aaaaaaaaaaaa"/>
+        </insert>
+        <insert tableName="bike_instances">
+            <column name="id"            value="d2222222-2222-2222-2222-222222222222"/>
+            <column name="city"          value="POZNAN"/>
+            <column name="status"        value="ACTIVE"/>
+            <column name="bike_model_id" value="aaaa0000-aaaa-aaaa-aaaa-aaaaaaaaaaaa"/>
+        </insert>
+
+        <!-- ══════════════════════════════════ RESERVATIONS ══════════════════════════════════ -->
+
+        <!-- COMPLETED — Alice, past rental, Warsaw bike a1 -->
+        <insert tableName="reservations">
+            <column name="id"              value="e1111111-1111-1111-1111-111111111111"/>
+            <column name="start_date"      valueDate="2026-06-01"/>
+            <column name="end_date"        valueDate="2026-06-05"/>
+            <column name="total_cost"      valueNumeric="125.00"/>
+            <column name="status"          value="COMPLETED"/>
+            <column name="created_at"      value="2026-05-28T10:00:00"/>
+            <column name="version"         valueNumeric="0"/>
+            <column name="user_id"         value="11111111-1111-1111-1111-111111111111"/>
+            <column name="bike_instance_id" value="a1111111-1111-1111-1111-111111111111"/>
+        </insert>
+
+        <!-- CONFIRMED — Alice, upcoming rental, same Warsaw bike a1 (no overlap with above) -->
+        <insert tableName="reservations">
+            <column name="id"              value="e2222222-2222-2222-2222-222222222222"/>
+            <column name="start_date"      valueDate="2026-07-10"/>
+            <column name="end_date"        valueDate="2026-07-15"/>
+            <column name="total_cost"      valueNumeric="150.00"/>
+            <column name="status"          value="CONFIRMED"/>
+            <column name="created_at"      value="2026-07-01T09:00:00"/>
+            <column name="version"         valueNumeric="0"/>
+            <column name="user_id"         value="11111111-1111-1111-1111-111111111111"/>
+            <column name="bike_instance_id" value="a1111111-1111-1111-1111-111111111111"/>
+        </insert>
+
+        <!-- CANCELLED — Bob attempted same dates as Alice above on bike a1, was rejected -->
+        <!-- Tests collision detection: this proves the guard worked -->
+        <insert tableName="reservations">
+            <column name="id"              value="e3333333-3333-3333-3333-333333333333"/>
+            <column name="start_date"      valueDate="2026-07-12"/>
+            <column name="end_date"        valueDate="2026-07-14"/>
+            <column name="total_cost"      valueNumeric="75.00"/>
+            <column name="status"          value="CANCELLED"/>
+            <column name="created_at"      value="2026-07-01T09:05:00"/>
+            <column name="version"         valueNumeric="0"/>
+            <column name="user_id"         value="22222222-2222-2222-2222-222222222222"/>
+            <column name="bike_instance_id" value="a1111111-1111-1111-1111-111111111111"/>
+        </insert>
+
+        <!-- PENDING — Bob just booked Wroclaw bike b1, payment not yet confirmed -->
+        <!-- Tests the payment-window state -->
+        <insert tableName="reservations">
+            <column name="id"              value="e4444444-4444-4444-4444-444444444444"/>
+            <column name="start_date"      valueDate="2026-07-20"/>
+            <column name="end_date"        valueDate="2026-07-25"/>
+            <column name="total_cost"      valueNumeric="150.00"/>
+            <column name="status"          value="PENDING"/>
+            <column name="created_at"      value="2026-07-02T08:00:00"/>
+            <column name="version"         valueNumeric="0"/>
+            <column name="user_id"         value="22222222-2222-2222-2222-222222222222"/>
+            <column name="bike_instance_id" value="b1111111-1111-1111-1111-111111111111"/>
+        </insert>
+
+    </changeSet>
+</databaseChangeLog>
