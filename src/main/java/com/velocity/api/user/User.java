@@ -38,8 +38,8 @@ public class User {
     private City city;
     @Column(nullable = false, updatable = false)
     private LocalDate joinedDate;
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<Reservation> reservations = new ArrayList<>();
+    @OneToMany(mappedBy = "user")
+    private List<Reservation> reservations = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
