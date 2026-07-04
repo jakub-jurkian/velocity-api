@@ -29,6 +29,6 @@ public class BikeInstance {
     @JoinColumn(name = "bike_model_id", nullable = false)
     private BikeModel bikeModel;
 
-    @OneToMany(mappedBy = "bikeInstance", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "bikeInstance")
     private List<Reservation> reservations = new ArrayList<>();
 }

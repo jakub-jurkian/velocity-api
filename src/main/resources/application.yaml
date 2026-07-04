@@ -9,6 +9,9 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    contexts: dev
 
 server:
   port: 8080
