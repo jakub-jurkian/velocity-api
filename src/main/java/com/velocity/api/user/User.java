@@ -1,7 +1,7 @@
 package com.velocity.api.user;
 
 import com.velocity.api.reservation.Reservation;
-import com.velocity.api.shared.City;
+import com.velocity.api.common.City;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

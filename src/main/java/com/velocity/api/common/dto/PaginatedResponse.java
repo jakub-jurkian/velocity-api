@@ -1,4 +1,4 @@
-package com.velocity.api.shared.dto;
+package com.velocity.api.common.dto;
 
 import java.util.List;
 

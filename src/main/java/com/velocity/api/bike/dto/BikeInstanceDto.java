@@ -1,7 +1,7 @@
 package com.velocity.api.bike.dto;
 
 import com.velocity.api.bike.BikeStatus;
-import com.velocity.api.shared.City;
+import com.velocity.api.common.City;
 import lombok.Getter;
 import lombok.Setter;
 
