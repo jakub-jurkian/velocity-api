@@ -1,4 +1,4 @@
-package com.velocity.api.shared;
+package com.velocity.api.common;
 
 public enum City {
     GDANSK, WROCLAW, WARSAW, POZNAN

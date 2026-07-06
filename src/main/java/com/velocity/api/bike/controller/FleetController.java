@@ -2,7 +2,7 @@ package com.velocity.api.bike.controller;
 
 import com.velocity.api.bike.dto.BikeInstanceDto;
 import com.velocity.api.bike.service.FleetService;
-import com.velocity.api.shared.dto.PaginatedResponse;
+import com.velocity.api.common.dto.PaginatedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
