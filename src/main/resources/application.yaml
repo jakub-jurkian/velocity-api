@@ -13,5 +13,11 @@ spring:
   liquibase:
     contexts: dev
 
+springdoc:
+  swagger-ui:
+    path: /api/swagger-ui.html
+  api-docs:
+    path: /api/api-docs
+
 server:
   port: 8080
