@@ -7,4 +7,8 @@ Backend for the VeloCity e-bike rental platform.
 
 ## Local Development
 1. Start the database: `docker-compose up -d`
-2. Run the application with the `dev` profile to inject mock data.
+2. Run the application with the `dev` profile to inject mock data
+
+
+# License 
+MIT
