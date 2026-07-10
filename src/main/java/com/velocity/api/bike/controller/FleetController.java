@@ -28,6 +28,13 @@ public class FleetController {
             summary = "Retrieve available bikes",
             description = "Returns a paginated list of all e-bikes currently marked with an ACTIVE status."
     )
+    /**
+     * Retrieves a paginated list of all currently active bikes in the fleet.
+     * Only bikes with an ACTIVE status are included in the result set.
+     *
+     * @param pageable the pagination and sorting configuration (page number, size, and sorting criteria)
+     * @return a {@link ResponseEntity} containing a {@link PaginatedResponse} of {@link BikeInstanceDto} objects
+     */
     public ResponseEntity<PaginatedResponse<BikeInstanceDto>> getAvailableBikes(@ParameterObject Pageable pageable) {
         Page<BikeInstanceDto> bikePage = fleetService.getAvailableBikes(pageable);
 
