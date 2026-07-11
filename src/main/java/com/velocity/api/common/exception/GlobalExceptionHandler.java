@@ -9,11 +9,19 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.net.URI;
 
+/**
+ * Global exception handler that intercepts exceptions thrown by the application
+ * and maps them to standardized RFC 7807 ProblemDetail JSON responses.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     /**
-     * Catches HTTP 400 errors from @Valid on request bodies.
+     * Catches validation errors when a request body fails @Valid constraints.
+     * Maps to HTTP 400 Bad Request.
+     *
+     * @param ex the exception containing the validation errors
+     * @return a ProblemDetail object with validation failure details
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationExceptions(MethodArgumentNotValidException ex) {
@@ -26,6 +34,13 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    /**
+     * Catches errors when a requested domain entity is not found in the database.
+     * Maps to HTTP 404 Not Found.
+     *
+     * @param ex the custom exception containing the resource missing message
+     * @return a ProblemDetail object with the 404 status
+     */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ProblemDetail handleNotFoundException(ResourceNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
@@ -39,8 +54,11 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * This triggers when business rules clash (like double-booking a bike)
-     * or database constraints fail (like duplicate emails).
+     * Catches business logic state conflicts and database integrity violations.
+     * Maps to HTTP 409 Conflict.
+     *
+     * @param ex the exception representing the clash in business rules or data constraints
+     * @return a ProblemDetail object explaining the resource conflict
      */
     @ExceptionHandler({IllegalStateException.class, DataIntegrityViolationException.class})
     public ProblemDetail handleConflictExceptions(RuntimeException ex) {
