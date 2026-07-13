@@ -1,4 +1,4 @@
-package com.velocity.api.conf;
+package com.velocity.api.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
