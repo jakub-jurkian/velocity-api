@@ -3,11 +3,14 @@ package com.velocity.api.common.exception;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Global exception handler that intercepts exceptions thrown by the application
@@ -27,10 +30,19 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleValidationExceptions(MethodArgumentNotValidException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
-                "The provided input data is invalid."
+                "Validation failed for one or more fields."
         );
-        problem.setTitle("Validation Failed");
+        problem.setTitle("Bad Request");
         problem.setType(URI.create("about:blank"));
+
+        Map<String, String> errors = new HashMap<>();
+
+        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
+            errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+        }
+
+        problem.setProperty("invalidFields", errors);
+
         return problem;
     }
 
@@ -63,7 +75,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({IllegalStateException.class, DataIntegrityViolationException.class})
     public ProblemDetail handleConflictExceptions(RuntimeException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
-                "The request could not be completed due to a conflict with the current state of the resource. " + ex.getMessage());
+                "The request could not be completed due to a conflict. The email or resource might already exist.");
         problem.setTitle("Resource Conflict");
         problem.setType(URI.create("about:blank"));
 
