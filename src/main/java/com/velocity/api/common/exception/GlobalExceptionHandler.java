@@ -1,5 +1,6 @@
 package com.velocity.api.common.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -16,6 +17,7 @@ import java.util.Map;
  * Global exception handler that intercepts exceptions thrown by the application
  * and maps them to standardized RFC 7807 ProblemDetail JSON responses.
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -28,6 +30,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationExceptions(MethodArgumentNotValidException ex) {
+        log.warn("Validation failed for request: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
                 "Validation failed for one or more fields."
@@ -55,6 +58,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ProblemDetail handleNotFoundException(ResourceNotFoundException ex) {
+        log.warn("Resource not found: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.NOT_FOUND,
                 ex.getMessage()
@@ -73,10 +77,32 @@ public class GlobalExceptionHandler {
      * @return a ProblemDetail object explaining the resource conflict
      */
     @ExceptionHandler({IllegalStateException.class, DataIntegrityViolationException.class})
-    public ProblemDetail handleConflictExceptions(RuntimeException ex) {
+    public ProblemDetail handleConflictException(RuntimeException ex) {
+        log.warn("Registration failed - Conflict: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
                 "The request could not be completed due to a conflict. The email or resource might already exist.");
         problem.setTitle("Resource Conflict");
+        problem.setType(URI.create("about:blank"));
+
+        return problem;
+    }
+
+    /**
+     * Fallback handler for any unhandled exceptions.
+     * Maps to HTTP 500 Internal Server Error.
+     *
+     * @param ex the unexpected exception
+     * @return a ProblemDetail object explaining the server error generically
+     */
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail handleGenericException(Exception ex) {
+        log.error("Unhandled exception occurred: ", ex);
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected internal server error occurred."
+        );
+        problem.setTitle("Internal Server Error");
         problem.setType(URI.create("about:blank"));
 
         return problem;
