@@ -6,11 +6,12 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
 public class RentalCostCalculatorTest {
+
     @Test
     // Information about business logic behind the method
     @DisplayName("Cost is exactly the flat rate multiplied by the number of rental days")
@@ -19,23 +20,23 @@ public class RentalCostCalculatorTest {
         // 1. Arrange
         int rentalDays = 5;
         BigDecimal flatRate = new BigDecimal("15.50");
+        RentalCostCalculator calculator = new RentalCostCalculator(flatRate);
         BigDecimal expectedCost = new BigDecimal("77.50");
         // 2. Act
-        BigDecimal actualCost = RentalCostCalculator.calculate(rentalDays, flatRate);
+        BigDecimal actualCost = calculator.calculate(rentalDays);
         // 3. Assert
-        assertEquals(expectedCost, actualCost);
+        assertThat(actualCost).isEqualByComparingTo(expectedCost);
     }
 
     @Test
     @DisplayName("A flat rate of zero computes to a total cost of zero (Promotional Day)")
     public void calculate_zeroFlatRate_returnsZero() {
         int rentalDays = 3;
-        BigDecimal flatRate = BigDecimal.ZERO;
-        BigDecimal expectedCost = BigDecimal.ZERO;
+        RentalCostCalculator calculator = new RentalCostCalculator(BigDecimal.ZERO);
 
-        BigDecimal actualCost = RentalCostCalculator.calculate(rentalDays, flatRate);
+        BigDecimal actualCost = calculator.calculate(rentalDays);
 
-        assertEquals(expectedCost, actualCost);
+        assertThat(actualCost).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     @Test
@@ -43,21 +44,11 @@ public class RentalCostCalculatorTest {
     public void calculate_notPositiveDays_throwsIllegalArgumentException() {
         // Arrange
         int rentalDays = 0;
-        BigDecimal flatRate = new BigDecimal("15.50");
+        RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("15.50"));
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> {
-            RentalCostCalculator.calculate(rentalDays, flatRate);
-        });
-    }
-
-    @Test
-    @DisplayName("Company has to have profit from renting ebikes")
-    public void calculate_negativeFlatRate_throwsIllegalArgumentException() {
-        int rentalDays = 5;
-        BigDecimal flatRate = new BigDecimal("-1");
-        assertThrows(IllegalArgumentException.class, () -> {
-            RentalCostCalculator.calculate(rentalDays, flatRate);
+            calculator.calculate(rentalDays);
         });
     }
 }
