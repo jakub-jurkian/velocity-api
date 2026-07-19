@@ -1,5 +1,6 @@
 package com.velocity.api.user.service;
 
+import com.velocity.api.common.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.user.User;
 import com.velocity.api.user.UserRole;
 import com.velocity.api.user.UserStatus;
@@ -29,7 +30,7 @@ public class UserService {
     @Transactional // tells Spring this entire method is a single db transaction.
     public UserRegistrationResponse registerUser(UserRegistrationDto dto) {
         if (userRepository.existsByEmail(dto.email())) {
-            throw new IllegalStateException("Email is already registered");
+            throw new EmailAlreadyRegisteredException("The email address " + dto.email() + " is already in use.");
         }
         User user = new User();
         user.setEmail(dto.email());

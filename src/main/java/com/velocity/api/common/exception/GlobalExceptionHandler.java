@@ -79,8 +79,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({IllegalStateException.class, DataIntegrityViolationException.class})
     public ProblemDetail handleConflictException(RuntimeException ex) {
         log.warn("Registration failed - Conflict: {}", ex.getMessage());
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
-                "The request could not be completed due to a conflict. The email or resource might already exist.");
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
         problem.setTitle("Resource Conflict");
         problem.setType(URI.create("about:blank"));
 
