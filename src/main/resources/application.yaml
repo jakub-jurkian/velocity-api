@@ -12,12 +12,19 @@ spring:
     open-in-view: false
   liquibase:
     contexts: dev
+  data:
+    web:
+      pageable:
+        max-page-size: 50
 
 springdoc:
   swagger-ui:
     path: /api/swagger-ui.html
   api-docs:
     path: /api/api-docs
+
+pricing:
+  daily-rate: 50.00
 
 server:
   port: 8080

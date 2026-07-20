@@ -5,14 +5,12 @@ import lombok.Setter;
 
 import java.util.UUID;
 
-@Getter
-@Setter
-public class UserDto {
-    private UUID id;
-    private String email;
-    private String fullName;
-    private String phone;
-    private String role; // String for API flexibility
-    private String status;
-    private String city;
-}
+public record UserDto(
+        UUID id,
+        String email,
+        String fullName,
+        String phone,
+        String role, // String for API flexibility
+        String status,
+        String city
+) {}

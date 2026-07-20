@@ -2,7 +2,6 @@ package com.velocity.api.security;
 
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.core.Authentication;
@@ -23,7 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @AutoConfigureMockMvc
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL) // Tells JUnit to let Spring inject
 @RequiredArgsConstructor // creates constructor
-public class ReservationIntegrationTest {
+public class AuthenticationIntegrationTest {
 
     private final MockMvc mockMvc;
 

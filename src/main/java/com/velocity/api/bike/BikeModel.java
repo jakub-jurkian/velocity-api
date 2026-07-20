@@ -29,6 +29,6 @@ public class BikeModel {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BikeCategory category;
-    @OneToMany(mappedBy = "bikeModel", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "bikeModel")
     private List<BikeInstance> bikeInstances = new ArrayList<>();
 }
