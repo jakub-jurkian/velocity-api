@@ -8,6 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -56,7 +57,7 @@ public class GlobalExceptionHandler {
      * @param ex the custom exception containing the resource missing message
      * @return a ProblemDetail object with the 404 status
      */
-    @ExceptionHandler(ResourceNotFoundException.class)
+    @ExceptionHandler({ResourceNotFoundException.class, NoResourceFoundException.class})
     public ProblemDetail handleNotFoundException(ResourceNotFoundException ex) {
         log.warn("Resource not found: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
@@ -76,7 +77,7 @@ public class GlobalExceptionHandler {
      * @param ex the exception representing the clash in business rules or data constraints
      * @return a ProblemDetail object explaining the resource conflict
      */
-    @ExceptionHandler({IllegalStateException.class, DataIntegrityViolationException.class})
+    @ExceptionHandler({EmailAlreadyRegisteredException.class, DataIntegrityViolationException.class})
     public ProblemDetail handleConflictException(RuntimeException ex) {
         log.warn("Registration failed - Conflict: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
