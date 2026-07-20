@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,7 +42,7 @@ public class FleetController {
             summary = "Retrieve available bikes",
             description = "Returns a paginated list of all e-bikes currently marked with an ACTIVE status."
     )
-    public ResponseEntity<PaginatedResponse<BikeInstanceDto>> getAvailableBikes(@ParameterObject Pageable pageable) {
+    public ResponseEntity<PaginatedResponse<BikeInstanceDto>> getAvailableBikes(@ParameterObject @PageableDefault(size = 20) Pageable pageable) {
         Page<BikeInstanceDto> bikePage = fleetService.getAvailableBikes(pageable);
 
         PaginatedResponse.PaginationMeta meta = new PaginatedResponse.PaginationMeta(

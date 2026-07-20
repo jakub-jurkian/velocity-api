@@ -12,6 +12,10 @@ spring:
     open-in-view: false
   liquibase:
     contexts: dev
+  data:
+    web:
+      pageable:
+        max-page-size: 50
 
 springdoc:
   swagger-ui:
