@@ -58,7 +58,7 @@ public class GlobalExceptionHandler {
      * @return a ProblemDetail object with the 404 status
      */
     @ExceptionHandler({ResourceNotFoundException.class, NoResourceFoundException.class})
-    public ProblemDetail handleNotFoundException(ResourceNotFoundException ex) {
+    public ProblemDetail handleNotFoundException(Exception ex) {
         log.warn("Resource not found: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.NOT_FOUND,

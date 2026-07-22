@@ -14,8 +14,8 @@ import static com.velocity.api.security.SecurityTestHelper.asUser;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @WithMockCustomUser
@@ -41,6 +41,8 @@ public class AuthenticationIntegrationTest {
                                 .with(asUser(testUserId, "CLIENT"))     // <-- Inject our helper!
                 )
                 .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.title").value("Resource Not Found"))
                 .andExpect(authenticated().withUsername(testUserId))
                 .andExpect(authenticated().withRoles("CLIENT"));
     }
