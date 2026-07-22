@@ -20,6 +20,5 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found: " + reservationId));
         reservation.transitionTo(newStatus);
-        reservationRepository.save(reservation);
     }
 }

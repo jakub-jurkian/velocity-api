@@ -4,7 +4,6 @@ import com.velocity.api.user.dto.UserRegistrationDto;
 import com.velocity.api.user.dto.UserRegistrationResponse;
 import com.velocity.api.user.service.UserService;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
