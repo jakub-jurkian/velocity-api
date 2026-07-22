@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,7 +21,7 @@ public class ReservationTest {
     @DisplayName("Valid state transitions should correctly update the reservation status")
     public void transitionTo_validStates_updatesStatus(ReservationStatus from, ReservationStatus to) {
         Reservation reservation = new Reservation();
-        reservation.setStatusForTest(from);
+        ReflectionTestUtils.setField(reservation, "status", from);
 
         reservation.transitionTo(to);
 
@@ -41,7 +42,7 @@ public class ReservationTest {
     @DisplayName("Invalid state transitions should throw exception containing from and to states")
     public void transitionTo_invalidStates_throwsInvalidStatusTransitionException(ReservationStatus from, ReservationStatus to) {
         Reservation reservation = new Reservation();
-        reservation.setStatusForTest(from);
+        ReflectionTestUtils.setField(reservation, "status", from);
 
         InvalidStatusTransitionException exception = assertThrows(InvalidStatusTransitionException.class, () -> {
             reservation.transitionTo(to);
@@ -63,7 +64,7 @@ public class ReservationTest {
     @DisplayName("Same-state transitions should act as a safe no-op")
     public void transitionTo_sameState_doesNothing(ReservationStatus from, ReservationStatus to) {
         Reservation reservation = new Reservation();
-        reservation.setStatusForTest(from);
+        ReflectionTestUtils.setField(reservation, "status", from);
 
         reservation.transitionTo(to);
 

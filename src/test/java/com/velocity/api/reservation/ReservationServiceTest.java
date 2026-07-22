@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -40,7 +41,7 @@ public class ReservationServiceTest {
     public void transition_illegalState_neverSaves() {
         UUID validId = UUID.randomUUID();
         Reservation pendingReservation = new Reservation();
-        pendingReservation.setStatusForTest(ReservationStatus.PENDING);
+        ReflectionTestUtils.setField(pendingReservation, "status", ReservationStatus.PENDING);
 
         when(reservationRepository.findById(validId)).thenReturn(Optional.of(pendingReservation));
         assertThrows(InvalidStatusTransitionException.class, () -> {

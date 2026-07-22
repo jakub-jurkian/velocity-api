@@ -64,8 +64,4 @@ public class Reservation {
 
         this.status = newStatus;
     }
-
-    public void setStatusForTest(ReservationStatus newStatus) {
-        this.status = newStatus;
-    }
 }
