@@ -1,8 +1,10 @@
 package com.velocity.api.reservation;
 
 import com.velocity.api.bike.BikeInstance;
+import com.velocity.api.common.exception.InvalidStatusTransitionException;
 import com.velocity.api.user.User;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,8 +28,9 @@ public class Reservation {
     @Column(nullable = false)
     private BigDecimal totalCost;
     @Column(nullable = false)
+    @Setter(AccessLevel.NONE)
     @Enumerated(EnumType.STRING)
-    private ReservationStatus status;
+    private ReservationStatus status = ReservationStatus.PENDING;
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
     @ManyToOne(fetch = FetchType.LAZY)
@@ -44,5 +47,25 @@ public class Reservation {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    public void transitionTo(ReservationStatus newStatus) {
+        if (this.status == newStatus) return;
+
+        boolean isValid = switch (this.status) {
+            case PENDING -> newStatus == ReservationStatus.CONFIRMED || newStatus == ReservationStatus.CANCELLED;
+            case CONFIRMED -> newStatus == ReservationStatus.COMPLETED || newStatus == ReservationStatus.CANCELLED;
+            case CANCELLED, COMPLETED -> false;
+        };
+
+        if (!isValid) {
+            throw new InvalidStatusTransitionException(this.status, newStatus);
+        }
+
+        this.status = newStatus;
+    }
+
+    public void setStatusForTest(ReservationStatus newStatus) {
+        this.status = newStatus;
     }
 }

@@ -110,4 +110,15 @@ public class GlobalExceptionHandler {
 
         return problem;
     }
+
+    @ExceptionHandler(InvalidStatusTransitionException.class)
+    public ProblemDetail handleInvalidStatusTransitionException(InvalidStatusTransitionException ex) {
+        log.warn("Invalid State Change: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNPROCESSABLE_CONTENT,
+                ex.getMessage()
+        );
+        problem.setTitle("Invalid State Transition");
+        return problem;
+    }
 }
