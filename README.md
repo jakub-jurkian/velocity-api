@@ -28,3 +28,26 @@ Every tool here earns its place - picked for a specific job.
 | **Docker & Docker Compose** | One-command local database and a containerized, deploy-anywhere app.                                              |
 | **GitHub Actions** | Continuous integration — every change is built and tested automatically.                                          |
 | **Swagger / OpenAPI** | Interactive, always-current API docs to easily navigate through the app.                                          |
+
+## Architecture
+
+A standard three-layer Spring Boot service: each request flows from the controller down to the database, with each layer owning one job.
+
+```mermaid
+flowchart LR
+    Client["React client"] -->|HTTP / JSON| Controller
+    subgraph API["Spring Boot application"]
+        Controller["Controller<br/>REST · DTOs · validation"]
+        Service["Service<br/>business logic · transactions"]
+        Repository["Repository<br/>Spring Data JPA"]
+        Controller --> Service --> Repository
+    end
+    Repository -->|SQL| DB[("PostgreSQL")]
+```
+
+**The layers**
+- **Controller** — speaks HTTP: maps requests to DTOs, validates input, returns consistent `ProblemDetail` errors. No business logic.
+- **Service** — the brain: business rules, orchestration, and transaction boundaries.
+- **Repository** — data access via Spring Data JPA. The database owns schema and integrity, including the constraint that makes double-booking impossible.
+
+Entities guard their own rules (a reservation validates its own status transitions), a deliberate rich-domain choice recorded in the ADRs.
