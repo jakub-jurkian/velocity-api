@@ -9,3 +9,5 @@ databaseChangeLog:
       file: db/changelog/004-create-reservations.xml
   - include:
       file: db/changelog/005-insert-sample-data.xml
+  - include:
+      file: db/changelog/006-add-reservation-exclusion-constraint.xml

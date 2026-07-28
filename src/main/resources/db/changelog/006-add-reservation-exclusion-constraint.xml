@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="006-add-reservation-exclusion-constraint" author="velocity-engineer">
+        <!-- We must enable the extension first to use GiST indexes on scalar types like UUIDs -->
+        <sql>
+            CREATE EXTENSION IF NOT EXISTS btree_gist;
+        </sql>
+
+        <!--
+          The constraint uses '[)' bounds (inclusive start, exclusive end) to match
+          our pricing logic and allow back-to-back rentals.
+        -->
+        <sql>
+            ALTER TABLE reservations
+                ADD CONSTRAINT no_overlapping_active_reservations
+                EXCLUDE USING gist (
+                bike_instance_id WITH =,
+                daterange(start_date, end_date, '[)') WITH &amp;&amp;
+            )
+            WHERE (status IN ('PENDING', 'CONFIRMED'));
+        </sql>
+
+        <rollback>
+            ALTER TABLE reservations DROP CONSTRAINT no_overlapping_active_reservations;
+            <!-- We typically do not drop the extension in rollback as other tables might end up relying on it -->
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
