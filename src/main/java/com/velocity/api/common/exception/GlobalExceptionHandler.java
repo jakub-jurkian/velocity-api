@@ -71,14 +71,14 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Catches business logic state conflicts and database integrity violations.
+     * Catches domain-specific registration conflicts.
      * Maps to HTTP 409 Conflict.
      *
-     * @param ex the exception representing the clash in business rules or data constraints
-     * @return a ProblemDetail object explaining the resource conflict
+     * @param ex the email already registered exception
+     * @return a ProblemDetail object explaining the duplicate email
      */
-    @ExceptionHandler({EmailAlreadyRegisteredException.class, DataIntegrityViolationException.class})
-    public ProblemDetail handleConflictException(RuntimeException ex) {
+    @ExceptionHandler(EmailAlreadyRegisteredException.class)
+    public ProblemDetail handleEmailAlreadyRegisteredException(EmailAlreadyRegisteredException ex) {
         log.warn("Registration failed - Conflict: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,
@@ -86,7 +86,97 @@ public class GlobalExceptionHandler {
         );
         problem.setTitle("Resource Conflict");
         problem.setType(URI.create("about:blank"));
+        return problem;
+    }
 
+    /**
+     * Catches database-level integrity violations, inspecting the root cause
+     * to provide specific conflict messages for reservation overlaps or unique constraints.
+     * Maps to HTTP 409 Conflict.
+     *
+     * @param ex the data integrity violation exception
+     * @return a ProblemDetail object explaining the specific conflict
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        log.warn("Database integrity violation occurred: {}", ex.getMessage());
+
+        String detail = "A database conflict occurred.";
+        String title = "Resource Conflict";
+
+        // Check if the exception message stems from our reservation exclusion constraint (ADR-001)
+        String rootMessage = ex.getMostSpecificCause().getMessage();
+        if (rootMessage != null && rootMessage.contains("no_overlapping_active_reservations")) {
+            detail = "This bike is already reserved for the selected dates.";
+            title = "Bike Not Available";
+        } else if (rootMessage != null && rootMessage.contains("email")) {
+            detail = "An account with this email already exists.";
+            title = "Duplicate Record";
+        }
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                detail
+        );
+        problem.setTitle(title);
+        problem.setType(URI.create("about:blank"));
+
+        return problem;
+    }
+
+    /**
+     * Catches illegal reservation state transition attempts.
+     * Maps to HTTP 422 Unprocessable Entity.
+     *
+     * @param ex the exception containing the transition violation details
+     * @return a ProblemDetail object with the 422 status
+     */
+    @ExceptionHandler(InvalidStatusTransitionException.class)
+    public ProblemDetail handleInvalidStatusTransitionException(InvalidStatusTransitionException ex) {
+        log.warn("Invalid State Change: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNPROCESSABLE_CONTENT,
+                ex.getMessage()
+        );
+        problem.setTitle("Invalid State Transition");
+        return problem;
+    }
+
+    /**
+     * Catches conflicts when a requested bike is already booked for the target dates.
+     * Maps to HTTP 409 Conflict.
+     *
+     * @param ex the exception indicating schedule overlap
+     * @return a ProblemDetail object with the 409 status
+     */
+    @ExceptionHandler(BikeNotAvailableException.class)
+    public ProblemDetail handleBikeNotAvailableException(BikeNotAvailableException ex) {
+        log.warn("Bike is not available: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problem.setTitle("Bike not available");
+        return problem;
+    }
+
+    /**
+     * Catches errors when a physical bike's hardware status (e.g., MAINTENANCE, RETIRED)
+     * prevents it from being booked.
+     * Maps to HTTP 422 Unprocessable Entity.
+     *
+     * @param ex the exception containing the invalid bike hardware state message
+     * @return a ProblemDetail object with the 422 status
+     */
+    @ExceptionHandler(InvalidBikeStateException.class)
+    public ProblemDetail handleInvalidBikeStateException(InvalidBikeStateException ex) {
+        log.warn("Invalid bike state for reservation: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNPROCESSABLE_CONTENT,
+                ex.getMessage()
+        );
+        problem.setTitle("Invalid Bike State");
+        problem.setType(URI.create("about:blank"));
         return problem;
     }
 
@@ -111,14 +201,4 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    @ExceptionHandler(InvalidStatusTransitionException.class)
-    public ProblemDetail handleInvalidStatusTransitionException(InvalidStatusTransitionException ex) {
-        log.warn("Invalid State Change: {}", ex.getMessage());
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.UNPROCESSABLE_CONTENT,
-                ex.getMessage()
-        );
-        problem.setTitle("Invalid State Transition");
-        return problem;
-    }
 }
