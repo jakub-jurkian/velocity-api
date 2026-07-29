@@ -10,7 +10,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Getter
@@ -32,7 +32,7 @@ public class Reservation {
     @Enumerated(EnumType.STRING)
     private ReservationStatus status = ReservationStatus.PENDING;
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -46,7 +46,7 @@ public class Reservation {
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = Instant.now();
     }
 
     public void transitionTo(ReservationStatus newStatus) {
@@ -63,5 +63,16 @@ public class Reservation {
         }
 
         this.status = newStatus;
+    }
+
+    public Reservation() {}
+
+    public Reservation(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, BigDecimal totalCost) {
+        this.user = user;
+        this.bikeInstance = bikeInstance;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.totalCost = totalCost;
+        // Status is initialized to PENDING by the field definition
     }
 }
