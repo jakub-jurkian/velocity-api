@@ -1,7 +1,9 @@
 package com.velocity.api.bike;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.ArrayList;
@@ -12,6 +14,7 @@ import java.util.UUID;
 @Setter
 @Entity
 @Table(name = "bike_models")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BikeModel {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -30,5 +33,14 @@ public class BikeModel {
     @Column(nullable = false)
     private BikeCategory category;
     @OneToMany(mappedBy = "bikeModel")
-    private List<BikeInstance> bikeInstances = new ArrayList<>();
+    private final List<BikeInstance> bikeInstances = new ArrayList<>();
+
+    public BikeModel(String name, String description, int speed, int range, int capacity, BikeCategory category) {
+        this.name = name;
+        this.description = description;
+        this.speed = speed;
+        this.range = range;
+        this.capacity = capacity;
+        this.category = category;
+    }
 }

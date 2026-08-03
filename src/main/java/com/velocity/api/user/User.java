@@ -3,8 +3,9 @@ package com.velocity.api.user;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.common.City;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -12,9 +13,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Getter
-@Setter
 @Entity
 @Table(name = "users")
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // for JPA
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -39,7 +40,7 @@ public class User {
     @Column(nullable = false, updatable = false)
     private LocalDate joinedDate;
     @OneToMany(mappedBy = "user")
-    private List<Reservation> reservations = new ArrayList<>();
+    final private List<Reservation> reservations = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
@@ -49,5 +50,15 @@ public class User {
     public void addReservation(Reservation reservation) {
         reservations.add(reservation);
         reservation.setUser(this); // Syncing the other side
+    }
+
+    public User(String email, String passwordHash, String fullName, String phone, UserRole role, City city) {
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.fullName = fullName;
+        this.phone = phone;
+        this.role = role;
+        this.city = city;
+        this.status = UserStatus.ACTIVE;
     }
 }

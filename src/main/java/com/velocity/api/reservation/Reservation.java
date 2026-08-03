@@ -14,7 +14,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Getter
-@Setter
 @Entity
 @Table(name = "reservations")
 public class Reservation {
