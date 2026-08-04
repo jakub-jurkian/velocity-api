@@ -1,7 +1,5 @@
 # VeloCity Fleet API
 
-[![CI](https://github.com/YOUR_GITHUB_NAME/velocity-fleet-api/actions/workflows/build.yml/badge.svg)](https://github.com/YOUR_GITHUB_NAME/velocity-fleet-api/actions)
-
 *The backend for VeloCity — an e-bike rental platform.*
 
 ## Overview
