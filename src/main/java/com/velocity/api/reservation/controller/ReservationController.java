@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,7 +24,7 @@ public class ReservationController {
     public ResponseEntity<ReservationResponse> createReservation(
             // TODO: Ensure the incoming request payload is validated
             // TODO: Extract authenticated user ID instead of a random mock
-            @Valid ReservationCreateRequest req
+            @Valid @RequestBody ReservationCreateRequest req
     ) {
         UUID authenticatedUserId = UUID.fromString("00000000-0000-0000-0000-000000000001");
         ReservationResponse response = reservationService.createReservation(authenticatedUserId, req);

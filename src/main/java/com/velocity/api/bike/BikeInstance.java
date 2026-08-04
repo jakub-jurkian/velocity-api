@@ -3,17 +3,18 @@ package com.velocity.api.bike;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.common.City;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Getter
-@Setter
 @Entity
 @Table(name = "bike_instances")
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public class BikeInstance {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -30,5 +31,11 @@ public class BikeInstance {
     private BikeModel bikeModel;
 
     @OneToMany(mappedBy = "bikeInstance")
-    private List<Reservation> reservations = new ArrayList<>();
+    private final List<Reservation> reservations = new ArrayList<>();
+
+    public BikeInstance(BikeModel bikeModel, City city) {
+        this.bikeModel = bikeModel;
+        this.city = city;
+        this.status = BikeStatus.ACTIVE; // Default state for a new physical bike
+    }
 }

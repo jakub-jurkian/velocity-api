@@ -32,15 +32,7 @@ public class UserService {
         if (userRepository.existsByEmail(dto.email())) {
             throw new EmailAlreadyRegisteredException("The email address " + dto.email() + " is already in use.");
         }
-        User user = new User();
-        user.setEmail(dto.email());
-        user.setFullName(dto.fullName());
-        user.setPhone(dto.phone());
-        user.setCity(dto.city());
-        user.setPasswordHash(passwordEncoder.encode(dto.password()));
-
-        user.setRole(UserRole.CLIENT);
-        user.setStatus(UserStatus.ACTIVE);
+        User user = new User(dto.email(), passwordEncoder.encode(dto.password()), dto.fullName(), dto.phone(), UserRole.CLIENT, dto.city());
 
         User savedUser = userRepository.save(user);
         log.info("Successfully registered new user with ID: {} and email: {}", savedUser.getId(), savedUser.getEmail());

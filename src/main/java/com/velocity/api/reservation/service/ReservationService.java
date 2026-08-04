@@ -37,6 +37,7 @@ public class ReservationService {
         reservation.transitionTo(newStatus);
     }
 
+    @Transactional
     public ReservationResponse createReservation(UUID userId, ReservationCreateRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

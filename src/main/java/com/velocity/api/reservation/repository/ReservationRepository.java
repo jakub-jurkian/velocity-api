@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public interface ReservationRepository extends JpaRepository<Reservation, UUID> {
     @Query("""
-              SELECT EXISTS(
+              SELECT NOT EXISTS(
                 SELECT 1 FROM Reservation r
                   WHERE r.bikeInstance.id = :bikeId
                     AND r.status IN ('PENDING', 'CONFIRMED')

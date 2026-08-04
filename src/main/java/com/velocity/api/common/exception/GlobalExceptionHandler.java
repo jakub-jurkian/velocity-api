@@ -1,6 +1,8 @@
 package com.velocity.api.common.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -97,8 +99,8 @@ public class GlobalExceptionHandler {
      * @param ex the data integrity violation exception
      * @return a ProblemDetail object explaining the specific conflict
      */
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ProblemDetail handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+    @ExceptionHandler({DataIntegrityViolationException.class, CannotAcquireLockException.class})
+    public ProblemDetail handleDataIntegrityViolationException(DataAccessException ex) {
         log.warn("Database integrity violation occurred: {}", ex.getMessage());
 
         String detail = "A database conflict occurred.";
