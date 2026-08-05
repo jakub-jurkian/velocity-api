@@ -33,4 +33,9 @@ public class ReservationController {
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
+
+    @PostMapping
+    public ResponseEntity<> checkFleetAvailability() {
+        // TODO: Returns an aggregated list of models available for the requested dates.
+    }
 }
