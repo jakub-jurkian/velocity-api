@@ -3,23 +3,28 @@ package com.velocity.api.reservation.service;
 import com.velocity.api.bike.BikeInstance;
 import com.velocity.api.bike.BikeStatus;
 import com.velocity.api.bike.repository.BikeInstanceRepository;
+import com.velocity.api.bike.repository.projection.AvailableModelProjection;
 import com.velocity.api.billing.RentalCostCalculator;
 import com.velocity.api.common.exception.BikeNotAvailableException;
 import com.velocity.api.common.exception.InvalidBikeStateException;
 import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
+import com.velocity.api.reservation.dto.AvailableModelResponse;
 import com.velocity.api.reservation.dto.ReservationCreateRequest;
 import com.velocity.api.reservation.dto.ReservationResponse;
 import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.user.User;
 import com.velocity.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -67,5 +72,24 @@ public class ReservationService {
                 savedReservation.getCreatedAt(),
                 bikeSummary
         );
+    }
+
+    public List<AvailableModelResponse> getAvailableModels(LocalDate startDate, LocalDate endDate) {
+        List<AvailableModelProjection> response = bikeInstanceRepository.findAvailableModels(startDate, endDate);
+        int days = Math.toIntExact(ChronoUnit.DAYS.between(startDate, endDate));
+        BigDecimal totalCost = rentalCostCalculator.calculate(days);
+        return response.stream().map(projection ->
+                        new AvailableModelResponse(
+                                projection.getBookableInstanceId(),
+                                projection.getModelName(),
+                                projection.getModelDescription(),
+                                projection.getModelSpeed(),
+                                projection.getModelRange(),
+                                projection.getModelCapacity(),
+                                projection.getModelCategory(),
+                                totalCost
+                        )
+                )
+                .toList();
     }
 }
