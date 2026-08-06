@@ -182,6 +182,17 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ProblemDetail handleIllegalArgumentException(IllegalArgumentException ex) {
+        log.warn("Invalid arguments: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage()
+        );
+        problem.setTitle("Invalid arguments");
+        return problem;
+    }
+
     /**
      * Fallback handler for any unhandled exceptions.
      * Maps to HTTP 500 Internal Server Error.
