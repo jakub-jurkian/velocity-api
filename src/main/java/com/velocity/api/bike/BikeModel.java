@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.UUID;
 
 @Getter
-@Setter
 @Entity
 @Table(name = "bike_models")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -35,7 +34,11 @@ public class BikeModel {
     @OneToMany(mappedBy = "bikeModel")
     private final List<BikeInstance> bikeInstances = new ArrayList<>();
 
-    public BikeModel(String name, String description, int speed, int range, int capacity, BikeCategory category) {
+    public static BikeModel create(String name, String description, int speed, int range, int capacity, BikeCategory category) {
+        return new BikeModel(name, description, speed, range, capacity, category);
+    }
+
+    private BikeModel(String name, String description, int speed, int range, int capacity, BikeCategory category) {
         this.name = name;
         this.description = description;
         this.speed = speed;

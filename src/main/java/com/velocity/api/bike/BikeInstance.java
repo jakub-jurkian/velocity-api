@@ -5,7 +5,7 @@ import com.velocity.api.common.City;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +14,7 @@ import java.util.UUID;
 @Getter
 @Entity
 @Table(name = "bike_instances")
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BikeInstance {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -33,7 +33,11 @@ public class BikeInstance {
     @OneToMany(mappedBy = "bikeInstance")
     private final List<Reservation> reservations = new ArrayList<>();
 
-    public BikeInstance(BikeModel bikeModel, City city) {
+    public static BikeInstance initialize(BikeModel bikeModel, City city) {
+        return new BikeInstance(bikeModel, city);
+    }
+
+    private BikeInstance(BikeModel bikeModel, City city) {
         this.bikeModel = bikeModel;
         this.city = city;
         this.status = BikeStatus.ACTIVE; // Default state for a new physical bike
