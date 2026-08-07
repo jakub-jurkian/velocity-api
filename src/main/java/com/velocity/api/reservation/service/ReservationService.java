@@ -11,13 +11,13 @@ import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
 import com.velocity.api.reservation.dto.AvailableModelResponse;
-import com.velocity.api.reservation.dto.ReservationCreateRequest;
-import com.velocity.api.reservation.dto.ReservationResponse;
+import com.velocity.api.reservation.dto.ReservationBookRequest;
+import com.velocity.api.reservation.dto.ReservationBookResponse;
 import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.user.User;
 import com.velocity.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.Local;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,21 +29,23 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReservationService {
+    private final BikeInstanceRepository bikeInstanceRepository;
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
-    private final BikeInstanceRepository bikeInstanceRepository;
     private final RentalCostCalculator rentalCostCalculator;
 
     @Transactional
-    public void transition(UUID reservationId, ReservationStatus newStatus) {
+    public void transitionStatus(UUID reservationId, ReservationStatus newStatus) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found: " + reservationId));
         reservation.transitionTo(newStatus);
+        log.info("Reservation {} transitioned to {}", reservationId, newStatus);
     }
 
     @Transactional
-    public ReservationResponse createReservation(UUID userId, ReservationCreateRequest req) {
+    public ReservationBookResponse book(UUID userId, ReservationBookRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         BikeInstance bike = bikeInstanceRepository.findById(req.bikeInstanceId())
@@ -60,25 +62,33 @@ public class ReservationService {
         int days = Math.toIntExact(ChronoUnit.DAYS.between(req.startDate(), req.endDate()));
         BigDecimal totalCost = rentalCostCalculator.calculate(days);
 
-        Reservation reservation = new Reservation(user, bike, req.startDate(), req.endDate(), totalCost);
-        Reservation savedReservation = reservationRepository.save(reservation);
-        ReservationResponse.BikeSummary bikeSummary = new ReservationResponse.BikeSummary(bike.getId(), bike.getBikeModel().getName(), bike.getCity());
-        return new ReservationResponse(
-                savedReservation.getId(),
-                savedReservation.getStartDate(),
-                savedReservation.getEndDate(),
-                savedReservation.getTotalCost(),
-                savedReservation.getStatus(),
-                savedReservation.getCreatedAt(),
+        Reservation reservation = Reservation.book(user, bike, req.startDate(), req.endDate(), totalCost);
+        Reservation bookedReservation = reservationRepository.save(reservation);
+        log.info(
+                "Booked reservation {} for user {} on bike {} from {} to {}",
+                bookedReservation.getId(),
+                userId,
+                bike.getId(),
+                req.startDate(),
+                req.endDate()
+        );
+        ReservationBookResponse.BikeSummary bikeSummary = new ReservationBookResponse.BikeSummary(bike.getId(), bike.getBikeModel().getName(), bike.getCity());
+        return new ReservationBookResponse(
+                bookedReservation.getId(),
+                bookedReservation.getStartDate(),
+                bookedReservation.getEndDate(),
+                bookedReservation.getTotalCost(),
+                bookedReservation.getStatus(),
+                bookedReservation.getCreatedAt(),
                 bikeSummary
         );
     }
 
     public List<AvailableModelResponse> getAvailableModels(LocalDate startDate, LocalDate endDate) {
-        List<AvailableModelProjection> response = bikeInstanceRepository.findAvailableModels(startDate, endDate);
+        List<AvailableModelProjection> availableProjections = bikeInstanceRepository.findAvailableModels(startDate, endDate);
         int days = Math.toIntExact(ChronoUnit.DAYS.between(startDate, endDate));
         BigDecimal totalCost = rentalCostCalculator.calculate(days);
-        return response.stream().map(projection ->
+        return availableProjections.stream().map(projection ->
                         new AvailableModelResponse(
                                 projection.getBookableInstanceId(),
                                 projection.getModelName(),

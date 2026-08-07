@@ -6,6 +6,7 @@ import com.velocity.api.user.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
@@ -14,9 +15,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Getter
-@Setter
 @Entity
 @Table(name = "reservations")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Reservation {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -28,9 +29,8 @@ public class Reservation {
     @Column(nullable = false)
     private BigDecimal totalCost;
     @Column(nullable = false)
-    @Setter(AccessLevel.NONE)
     @Enumerated(EnumType.STRING)
-    private ReservationStatus status = ReservationStatus.PENDING;
+    private ReservationStatus status;
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
     @ManyToOne(fetch = FetchType.LAZY)
@@ -65,14 +65,16 @@ public class Reservation {
         this.status = newStatus;
     }
 
-    public Reservation() {}
+    public static Reservation book(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, BigDecimal totalCost) {
+        return new Reservation(user, bikeInstance, startDate, endDate, totalCost);
+    }
 
-    public Reservation(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, BigDecimal totalCost) {
+    private Reservation(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, BigDecimal totalCost) {
         this.user = user;
         this.bikeInstance = bikeInstance;
         this.startDate = startDate;
         this.endDate = endDate;
         this.totalCost = totalCost;
-        // Status is initialized to PENDING by the field definition
+        this.status = ReservationStatus.PENDING;
     }
 }

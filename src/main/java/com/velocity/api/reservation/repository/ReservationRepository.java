@@ -14,9 +14,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
                 SELECT 1 FROM Reservation r
                   WHERE r.bikeInstance.id = :bikeId
                     AND r.status IN ('PENDING', 'CONFIRMED')
-                    AND r.startDate < :reqEndDate
-                    AND r.endDate > :reqStartDate
+                    AND r.startDate < :endDate
+                    AND r.endDate > :startDate
               )
     """)
-    public boolean isBikeAvailable(@Param("bikeId") UUID bikeId, @Param("reqStartDate") LocalDate reqStartDate, @Param("reqEndDate") LocalDate reqEndDate);
+    public boolean isBikeAvailable(@Param("bikeId") UUID bikeId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }

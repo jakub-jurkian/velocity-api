@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
-public record ReservationResponse(
+public record ReservationBookResponse(
         UUID id,
         LocalDate startDate,
         LocalDate endDate,
