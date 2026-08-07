@@ -32,7 +32,7 @@ public class ReservationServiceTest {
         when(reservationRepository.findById(fakeId)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> {
-            reservationService.transition(fakeId, ReservationStatus.CONFIRMED);
+            reservationService.transitionStatus(fakeId, ReservationStatus.CONFIRMED);
         });
     }
 
@@ -45,7 +45,7 @@ public class ReservationServiceTest {
 
         when(reservationRepository.findById(validId)).thenReturn(Optional.of(pendingReservation));
         assertThrows(InvalidStatusTransitionException.class, () -> {
-            reservationService.transition(validId, ReservationStatus.COMPLETED);
+            reservationService.transitionStatus(validId, ReservationStatus.COMPLETED);
         });
 
         verify(reservationRepository, never()).save(any(Reservation.class));
