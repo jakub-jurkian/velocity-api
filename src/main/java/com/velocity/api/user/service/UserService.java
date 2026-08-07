@@ -2,9 +2,7 @@ package com.velocity.api.user.service;
 
 import com.velocity.api.common.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.user.User;
-import com.velocity.api.user.UserRole;
-import com.velocity.api.user.UserStatus;
-import com.velocity.api.user.dto.UserRegistrationDto;
+import com.velocity.api.user.dto.UserRegistrationRequest;
 import com.velocity.api.user.dto.UserRegistrationResponse;
 import com.velocity.api.user.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,29 +18,23 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    /**
-     * Registers a new client in the system.
-     *
-     * @param dto the validated registration payload
-     * @return UserRegistrationResponse safely omitting the password hash
-     * @throws IllegalStateException if the email is already in use
-     */
-    @Transactional // tells Spring this entire method is a single db transaction.
-    public UserRegistrationResponse registerUser(UserRegistrationDto dto) {
-        if (userRepository.existsByEmail(dto.email())) {
-            throw new EmailAlreadyRegisteredException("The email address " + dto.email() + " is already in use.");
+    @Transactional
+    public UserRegistrationResponse registerUser(UserRegistrationRequest request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new EmailAlreadyRegisteredException("The email address " + request.email() + " is already in use.");
         }
-        User user = new User(dto.email(), passwordEncoder.encode(dto.password()), dto.fullName(), dto.phone(), UserRole.CLIENT, dto.city());
+        String encodedPassword = passwordEncoder.encode(request.password());
+        User user = User.registerClient(request.email(), encodedPassword, request.fullName(), request.phone(), request.city());
 
-        User savedUser = userRepository.save(user);
-        log.info("Successfully registered new user with ID: {} and email: {}", savedUser.getId(), savedUser.getEmail());
+        User registeredUser = userRepository.save(user);
+        log.info("Successfully registered new user with ID: {} and email: {}", registeredUser.getId(), registeredUser.getEmail());
         return new UserRegistrationResponse(
-                savedUser.getId(),
-                savedUser.getEmail(),
-                savedUser.getFullName(),
-                savedUser.getPhone(),
-                savedUser.getCity(),
-                savedUser.getRole()
+                registeredUser.getId(),
+                registeredUser.getEmail(),
+                registeredUser.getFullName(),
+                registeredUser.getPhone(),
+                registeredUser.getCity(),
+                registeredUser.getRole()
         );
     }
 }

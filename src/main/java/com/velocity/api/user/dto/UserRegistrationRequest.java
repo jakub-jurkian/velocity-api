@@ -5,7 +5,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
 @Valid
-public record UserRegistrationDto(
+public record UserRegistrationRequest(
         @NotBlank(message = "Email is required")
         @Email(message = "Email must be properly formatted")
         String email,
@@ -22,12 +22,8 @@ public record UserRegistrationDto(
         String phone
 ) {
     // compact constructor
-    public UserRegistrationDto {
-        if (email != null) {
-            email = email.toLowerCase().trim();
-        }
-        if (fullName != null) {
-            fullName = fullName.trim();
-        }
+    public UserRegistrationRequest {
+        if (email != null) email = email.toLowerCase().trim();
+        if (fullName != null) fullName = fullName.trim();
     }
 }
