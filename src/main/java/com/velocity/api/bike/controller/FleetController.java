@@ -5,6 +5,7 @@ import com.velocity.api.bike.service.FleetService;
 import com.velocity.api.common.dto.PaginatedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,12 +24,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/fleet")
 @Tag(name = "Fleet Management", description = "Endpoints for interacting with the physical e-bike fleet")
+@RequiredArgsConstructor
 public class FleetController {
     private final FleetService fleetService;
-
-    public FleetController(FleetService fleetService) {
-        this.fleetService = fleetService;
-    }
 
     /**
      * Retrieves a paginated list of all currently active bikes in the fleet.
@@ -42,8 +40,8 @@ public class FleetController {
             summary = "Retrieve available bikes",
             description = "Returns a paginated list of all e-bikes currently marked with an ACTIVE status."
     )
-    public ResponseEntity<PaginatedResponse<BikeInstanceDto>> getAvailableBikes(@ParameterObject @PageableDefault(size = 20) Pageable pageable) {
-        Page<BikeInstanceDto> bikePage = fleetService.getAvailableBikes(pageable);
+    public ResponseEntity<PaginatedResponse<BikeInstanceDto>> getActiveBikes(@ParameterObject @PageableDefault(size = 20) Pageable pageable) {
+        Page<BikeInstanceDto> bikePage = fleetService.getActiveBikes(pageable);
 
         PaginatedResponse.PaginationMeta meta = new PaginatedResponse.PaginationMeta(
                 bikePage.getNumber(),          // Current page number (0-indexed)

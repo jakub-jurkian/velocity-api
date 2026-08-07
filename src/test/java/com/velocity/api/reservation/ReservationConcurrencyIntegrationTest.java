@@ -5,7 +5,7 @@ import com.velocity.api.bike.BikeInstance;
 import com.velocity.api.bike.BikeModel;
 import com.velocity.api.bike.repository.BikeInstanceRepository;
 import com.velocity.api.bike.repository.BikeModelRepository;
-import com.velocity.api.reservation.dto.ReservationCreateRequest;
+import com.velocity.api.reservation.dto.ReservationBookRequest;
 import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.common.City;
 import com.velocity.api.user.repository.UserRepository;
@@ -56,8 +56,8 @@ public class ReservationConcurrencyIntegrationTest {
         );
         // force the hardcoded user into DB cause id is hardcoded in controller right now
         // User savedUser = userRepository.save(new User("test@test.com", "xf843fd23iom4r", "Test", "+48000000000", UserRole.CLIENT, City.GDANSK));
-        BikeModel savedBikeModel = bikeModelRepository.save(new BikeModel("Test", "Test", 100, 100, 50, BikeCategory.AGILITY));
-        BikeInstance savedBikeInstance = bikeInstanceRepository.save(new BikeInstance(savedBikeModel, City.GDANSK));
+        BikeModel savedBikeModel = bikeModelRepository.save(BikeModel.create("Test", "Test", 100, 100, 50, BikeCategory.AGILITY));
+        BikeInstance savedBikeInstance = bikeInstanceRepository.save(BikeInstance.initialize(savedBikeModel, City.GDANSK));
         bikeInstanceId = savedBikeInstance.getId();
     }
 
@@ -72,7 +72,7 @@ public class ReservationConcurrencyIntegrationTest {
     @Test
     public void shouldReturnConflictOnConcurrentOverlappingReservations() throws ExecutionException, InterruptedException {
         // prep the req
-        ReservationCreateRequest req = new ReservationCreateRequest(bikeInstanceId, LocalDate.parse("2026-09-05"), LocalDate.parse("2026-09-10"));
+        ReservationBookRequest req = new ReservationBookRequest(bikeInstanceId, LocalDate.parse("2026-09-05"), LocalDate.parse("2026-09-10"));
 
         // init concurrency tools
         CountDownLatch latch = new CountDownLatch(1);
@@ -97,8 +97,6 @@ public class ReservationConcurrencyIntegrationTest {
             ResponseEntity<String> res2 = task2.get();
             HttpStatus status1 = (HttpStatus) res1.getStatusCode();
             HttpStatus status2 = (HttpStatus) res2.getStatusCode();
-            System.out.println("Response 1 Body: " + res1.getBody());
-            System.out.println("Response 2 Body: " + res2.getBody());
             // assert that one is 201 and second one is 409
             List<HttpStatus> statuses = List.of(status1, status2);
             assertThat(statuses).containsExactlyInAnyOrder(HttpStatus.CREATED, HttpStatus.CONFLICT);

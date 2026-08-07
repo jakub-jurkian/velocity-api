@@ -1,6 +1,6 @@
 package com.velocity.api.user.controller;
 
-import com.velocity.api.user.dto.UserRegistrationDto;
+import com.velocity.api.user.dto.UserRegistrationRequest;
 import com.velocity.api.user.dto.UserRegistrationResponse;
 import com.velocity.api.user.service.UserService;
 import jakarta.validation.Valid;
@@ -15,21 +15,21 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
 public class AuthController {
     private final UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<UserRegistrationResponse> registerUser(@Valid @RequestBody UserRegistrationDto requestDto) {
-        UserRegistrationResponse createdUser = userService.registerUser(requestDto);
+    public ResponseEntity<UserRegistrationResponse> registerUser(@Valid @RequestBody UserRegistrationRequest request) {
+        UserRegistrationResponse response = userService.registerUser(request);
 
         URI location = ServletUriComponentsBuilder
                 .fromCurrentContextPath()       // Gets http://localhost:8080
                 .path("/api/v1/users/{id}")     // The path to the future user profile
-                .buildAndExpand(createdUser.id()) // Replaces {id} with the real UUID
+                .buildAndExpand(response.id()) // Replaces {id} with the real UUID
                 .toUri();
 
-        return ResponseEntity.created(location).body(createdUser);
+        return ResponseEntity.created(location).body(response);
     }
 }

@@ -49,10 +49,14 @@ public class User {
 
     public void addReservation(Reservation reservation) {
         reservations.add(reservation);
-        reservation.setUser(this); // Syncing the other side
     }
 
-    public User(String email, String passwordHash, String fullName, String phone, UserRole role, City city) {
+    // The intent-revealing factory method
+    public static User registerClient(String email, String passwordHash, String fullName, String phone, City city) {
+        return new User(email, passwordHash, fullName, phone, UserRole.CLIENT, city);
+    }
+
+    private User(String email, String passwordHash, String fullName, String phone, UserRole role, City city) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.fullName = fullName;

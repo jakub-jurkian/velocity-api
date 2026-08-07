@@ -1,15 +1,14 @@
 package com.velocity.api.reservation.controller;
 
 import com.velocity.api.reservation.dto.AvailableModelResponse;
-import com.velocity.api.reservation.dto.ReservationCreateRequest;
-import com.velocity.api.reservation.dto.ReservationResponse;
+import com.velocity.api.reservation.dto.ReservationBookRequest;
+import com.velocity.api.reservation.dto.ReservationBookResponse;
 import com.velocity.api.reservation.service.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.function.EntityResponse;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,13 +21,11 @@ public class ReservationController {
     private final ReservationService reservationService;
 
     @PostMapping
-    public ResponseEntity<ReservationResponse> createReservation(
-            // TODO: Ensure the incoming request payload is validated
-            // TODO: Extract authenticated user ID instead of a random mock
-            @Valid @RequestBody ReservationCreateRequest req
+    public ResponseEntity<ReservationBookResponse> book(
+            @Valid @RequestBody ReservationBookRequest request
     ) {
         UUID authenticatedUserId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        ReservationResponse response = reservationService.createReservation(authenticatedUserId, req);
+        ReservationBookResponse response = reservationService.book(authenticatedUserId, request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
