@@ -1,6 +1,6 @@
 # VeloCity Fleet API - AI Context
 
-Last updated: 2026-07-29
+Last updated: 2026-08-10
 
 > Single source of truth for AI assistants and contributors.
 > Keep this file aligned with the codebase, schema, ADRs, and delivery plan.
@@ -117,10 +117,11 @@ Notes:
 
 ## 8. Current Sprint / Where I Am
 
-- Day 29/90
-- Last completed: core domain entities, rental calculator, auth registration, fleet listing, RFC 7807 error handling, Liquibase schema, seed data, and the reservation creation endpoint with database-level concurrency enforcement (Issue #14)
-- In progress: the working API/security phase from the 90-day plan
-- Next up: reservation conflict integration testing and availability search
+- Day 41/90
+- Last completed: reservation conflict integration testing (#15), bike availability check (#16), and domain layer refactoring to strictly enforce ADR-002 (removed public setters/constructors, added static factory methods).
+- In progress: @Scheduled jobs for reservation lifecycle management (auto-complete rentals & auto-cancel stale PENDING) (#18).
+- Next up: Optimistic-lock conflict handling on updates (#17) and N+1 query diagnosis (#19).
+
 ## 9. Reference, Don't Duplicate
 
 - Full schema: `src/main/resources/db/changelog/`
@@ -135,17 +136,21 @@ Notes:
 
 - `POST /api/v1/auth/register`
 - `GET /api/v1/fleet`
-- - `POST /api/v1/reservations`
+- `POST /api/v1/reservations`
+- `GET /api/v1/reservations/availability`
 
 ## 11. Current Implementation Notes
 
 - `UserService` handles registration and uses `PasswordEncoder`.
 - `FleetService` returns only active bike instances.
+- Core domain entities (`Reservation`, `User`, `BikeModel`, `BikeInstance`) fully comply with ADR-002, utilizing protected constructors and static factory methods to prevent invalid state instantiation.
 - `ReservationService` orchestrates cost calculation, persistence, and status assignment for new bookings.
-- `GlobalExceptionHandler` maps validation failures, missing resources, conflicts (including intelligent root-cause inspection for PostgreSQL exclusion constraints), invalid bike states, invalid status transitions, and uncaught exceptions to `ProblemDetail`[cite: 1, 3].
+- `GlobalExceptionHandler` maps validation failures, missing resources, conflicts (including intelligent root-cause inspection for PostgreSQL exclusion constraints), invalid bike states, invalid status transitions, and uncaught exceptions to `ProblemDetail`.
+- Paginated responses (like `/api/v1/fleet`) are wrapped in a generic `PaginatedResponse<T>` envelope with static factory mapping to decouple API contracts from Spring Data `Page` objects.
 - Reservation creation endpoint (`POST /api/v1/reservations`) is fully implemented with DTO protection and `@Valid` date-range validation.
 - There is no JWT filter, token service, or login endpoint yet.
 - The current mapper is handwritten (`BikeInstanceMapper`), not MapStruct-generated.
+
 ## 12. Plan Alignment
 
 The 90-day plan in `VeloCity_Fleet_API_Plan_90_Days.docx` is a guide, not a perfect match for current code. Current code already includes a few additions and corrections:
