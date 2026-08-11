@@ -102,4 +102,18 @@ public class ReservationService {
                 )
                 .toList();
     }
+
+    @Transactional // if not added, status will be updated in Java memory only.
+    public void cancelStaleReservation(UUID id) {
+        Reservation staleReservation = reservationRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Reservation not found"));
+        staleReservation.transitionTo(ReservationStatus.CANCELLED);
+    }
+
+    @Transactional
+    public void completePastDueConfirmedReservations(UUID id) {
+        Reservation pastDueConfirmedReservation = reservationRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Reservation not found"));
+        pastDueConfirmedReservation.transitionTo(ReservationStatus.COMPLETED);
+    }
 }

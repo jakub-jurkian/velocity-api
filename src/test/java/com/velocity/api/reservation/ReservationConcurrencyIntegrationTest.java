@@ -70,7 +70,7 @@ public class ReservationConcurrencyIntegrationTest {
     }
 
     @Test
-    public void shouldReturnConflictOnConcurrentOverlappingReservations() throws ExecutionException, InterruptedException {
+    public void createReservation_ConcurrentIdenticalRequests_ReturnsCreatedAndConflict() throws ExecutionException, InterruptedException {
         // prep the req
         ReservationBookRequest req = new ReservationBookRequest(bikeInstanceId, LocalDate.parse("2026-09-05"), LocalDate.parse("2026-09-10"));
 
