@@ -3,3 +3,5 @@ spring:
     url: jdbc:postgresql://localhost:5432/velocity_test
     username: admin
     password: password
+  liquibase:
+    contexts: test
