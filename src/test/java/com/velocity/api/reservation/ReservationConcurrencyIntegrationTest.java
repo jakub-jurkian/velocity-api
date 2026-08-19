@@ -11,6 +11,7 @@ import com.velocity.api.common.City;
 import com.velocity.api.user.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
@@ -69,6 +70,7 @@ public class ReservationConcurrencyIntegrationTest {
         userRepository.deleteAll();
     }
 
+    @Disabled("Blocked until Issue #22 provides JWT token generation")
     @Test
     public void createReservation_ConcurrentIdenticalRequests_ReturnsCreatedAndConflict() throws ExecutionException, InterruptedException {
         // prep the req

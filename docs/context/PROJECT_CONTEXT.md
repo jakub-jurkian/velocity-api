@@ -1,6 +1,6 @@
 # VeloCity Fleet API - AI Context
 
-Last updated: 2026-08-10
+Last updated: 2026-08-13
 
 > Single source of truth for AI assistants and contributors.
 > Keep this file aligned with the codebase, schema, ADRs, and delivery plan.
@@ -118,9 +118,9 @@ Notes:
 ## 8. Current Sprint / Where I Am
 
 - Day 41/90
-- Last completed: reservation conflict integration testing (#15), bike availability check (#16), and domain layer refactoring to strictly enforce ADR-002 (removed public setters/constructors, added static factory methods).
-- In progress: @Scheduled jobs for reservation lifecycle management (auto-complete rentals & auto-cancel stale PENDING) (#18).
-- Next up: Optimistic-lock conflict handling on updates (#17) and N+1 query diagnosis (#19).
+- Last completed: reservation conflict integration testing (#15), bike availability check (#16), optimistic-lock conflict handling on updates (#17), @Scheduled reservation lifecycle jobs (#18), N+1 query diagnosis (#19), and domain layer refactoring to strictly enforce ADR-002 (removed public setters/constructors, added static factory methods).
+- In progress: fleet status management (#20).
+- Next up: JWT authentication filter chain (#21), Login endpoint issuing JWT (#22), `/auth/me` and `/auth/logout` endpoints (#23), user profile update (#24), and admin user management (#25).
 
 ## 9. Reference, Don't Duplicate
 
