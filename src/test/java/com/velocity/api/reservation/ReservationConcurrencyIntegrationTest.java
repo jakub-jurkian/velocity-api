@@ -8,6 +8,9 @@ import com.velocity.api.bike.repository.BikeModelRepository;
 import com.velocity.api.reservation.dto.ReservationBookRequest;
 import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.common.City;
+import com.velocity.api.security.CustomUserDetailsService;
+import com.velocity.api.security.JwtService;
+import com.velocity.api.user.User;
 import com.velocity.api.user.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,12 +20,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -46,8 +53,13 @@ public class ReservationConcurrencyIntegrationTest {
     private BikeInstanceRepository bikeInstanceRepository;
     @Autowired
     private ReservationRepository reservationRepository;
+    @Autowired
+    private JwtService jwtService;
+    @Autowired
+    private CustomUserDetailsService customUserDetailsService;
 
     private UUID bikeInstanceId;
+    private String validToken;
 
     @BeforeEach
     public void setUp() {
@@ -60,6 +72,13 @@ public class ReservationConcurrencyIntegrationTest {
         BikeModel savedBikeModel = bikeModelRepository.save(BikeModel.create("Test", "Test", 100, 100, 50, BikeCategory.AGILITY));
         BikeInstance savedBikeInstance = bikeInstanceRepository.save(BikeInstance.initialize(savedBikeModel, City.GDANSK));
         bikeInstanceId = savedBikeInstance.getId();
+
+        User user = userRepository.findByEmail("test@test.com");
+        HashMap<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("id", user.getId());
+        extraClaims.put("role", user.getRole());
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername("test@test.com");
+        validToken = jwtService.generateToken(extraClaims, userDetails);
     }
 
     @AfterEach
@@ -70,7 +89,6 @@ public class ReservationConcurrencyIntegrationTest {
         userRepository.deleteAll();
     }
 
-    @Disabled("Blocked until Issue #22 provides JWT token generation")
     @Test
     public void createReservation_ConcurrentIdenticalRequests_ReturnsCreatedAndConflict() throws ExecutionException, InterruptedException {
         // prep the req
@@ -84,8 +102,16 @@ public class ReservationConcurrencyIntegrationTest {
         Callable<ResponseEntity<String>> bookingTask = () -> {
             // Freeze the thread until the main test thread drops the gate
             latch.await();
-            // Fire the POST request to the controller
-            return testRestTemplate.postForEntity("/api/v1/reservations", req, String.class);
+            // fire POST req with auth header via exchange
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(validToken); // Spring's built-in method for "Bearer eyJ..."
+            HttpEntity<ReservationBookRequest> entity = new HttpEntity<>(req, headers);
+            return testRestTemplate.exchange(
+                    "/api/v1/reservations",
+                    HttpMethod.POST,
+                    entity,
+                    String.class
+            );
         };
 
         try {
