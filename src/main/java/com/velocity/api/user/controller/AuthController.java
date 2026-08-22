@@ -1,10 +1,14 @@
 package com.velocity.api.user.controller;
 
+import com.velocity.api.user.dto.UserLoginRequest;
+import com.velocity.api.user.dto.UserLoginResponse;
 import com.velocity.api.user.dto.UserRegistrationRequest;
 import com.velocity.api.user.dto.UserRegistrationResponse;
+import com.velocity.api.user.service.AuthService;
 import com.velocity.api.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +23,7 @@ import java.net.URI;
 @RequiredArgsConstructor
 public class AuthController {
     private final UserService userService;
+    private final AuthService authService;
 
     @PostMapping("/register")
     public ResponseEntity<UserRegistrationResponse> registerUser(@Valid @RequestBody UserRegistrationRequest request) {
@@ -31,5 +36,11 @@ public class AuthController {
                 .toUri();
 
         return ResponseEntity.created(location).body(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<UserLoginResponse> loginUser(@Valid @RequestBody UserLoginRequest request) {
+        UserLoginResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
     }
 }
