@@ -1,15 +1,11 @@
 package com.velocity.api.user.controller;
 
-import com.velocity.api.user.dto.UserLoginRequest;
-import com.velocity.api.user.dto.UserLoginResponse;
-import com.velocity.api.user.dto.UserRegistrationRequest;
-import com.velocity.api.user.dto.UserRegistrationResponse;
+import com.velocity.api.user.dto.*;
 import com.velocity.api.user.service.AuthService;
 import com.velocity.api.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -49,5 +45,11 @@ public class AuthController {
             authService.logout(token);
         }
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileResponse> getProfile() {
+        UserProfileResponse response = userService.getProfile();
+        return ResponseEntity.ok(response);
     }
 }
