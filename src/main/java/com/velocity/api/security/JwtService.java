@@ -26,6 +26,10 @@ public class JwtService {
         return Jwts.parser().verifyWith(getSignInKey()).build().parseSignedClaims(token).getPayload().getSubject();
     }
 
+    public Date extractExpration(String token) {
+        return Jwts.parser().verifyWith(getSignInKey()).build().parseSignedClaims(token).getPayload().getExpiration();
+    }
+
     public <T> T extractClaim(String token, String claimKey, Class<T> type) {
         return Jwts.parser()
                 .verifyWith(getSignInKey())
