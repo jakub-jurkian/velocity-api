@@ -21,11 +21,11 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
                             AND r.endDate > :startDate
                       )
             """)
-    public boolean isBikeAvailable(@Param("bikeId") UUID bikeId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    boolean isBikeAvailable(@Param("bikeId") UUID bikeId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     @Query("SELECT r.id FROM Reservation r WHERE r.status = :status AND r.createdAt < :cutoff")
-    public List<UUID> findStalePendingReservationsIds(@Param("status") ReservationStatus status, @Param("cutoff") Instant cutoff);
+    List<UUID> findStalePendingReservationsIds(@Param("status") ReservationStatus status, @Param("cutoff") Instant cutoff);
 
     @Query("SELECT r.id FROM Reservation r WHERE r.status = :status AND r.endDate < :today")
-    public List<UUID> findPastDueConfirmedReservationsIds(@Param("status") ReservationStatus status, @Param("today") LocalDate today);
+    List<UUID> findPastDueConfirmedReservationsIds(@Param("status") ReservationStatus status, @Param("today") LocalDate today);
 }
