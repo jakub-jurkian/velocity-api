@@ -3,7 +3,6 @@ package com.velocity.api.bike.repository;
 import com.velocity.api.bike.BikeInstance;
 import com.velocity.api.bike.BikeStatus;
 import com.velocity.api.bike.repository.projection.AvailableModelProjection;
-import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;

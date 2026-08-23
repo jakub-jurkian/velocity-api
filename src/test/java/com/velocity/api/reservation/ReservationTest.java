@@ -2,7 +2,6 @@ package com.velocity.api.reservation;
 
 import com.velocity.api.common.exception.InvalidStatusTransitionException;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.test.util.ReflectionTestUtils;

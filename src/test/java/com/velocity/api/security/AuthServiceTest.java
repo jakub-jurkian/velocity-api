@@ -18,6 +18,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -57,7 +59,7 @@ public class AuthServiceTest {
 
         // Tell the AuthenticationManager to return your mockAuth!
         when(authenticationManager.authenticate(any())).thenReturn(mockAuth);
-        when(userRepository.findByEmail(anyString())).thenReturn(User.registerClient("test@test.com", "hash", "Test", "+48000400000", City.GDANSK));
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(User.registerClient("test@test.com", "hash", "Test", "+48000400000", City.GDANSK)));
         when(jwtService.generateToken(any(), any())).thenReturn("fake-jwt-string");
         UserLoginRequest request = new UserLoginRequest("test@test.com", "hash");
         // Act
