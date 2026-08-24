@@ -1,4 +1,4 @@
-package com.velocity.api.User;
+package com.velocity.api.User.Service;
 
 import com.velocity.api.common.City;
 import com.velocity.api.common.exception.ResourceNotFoundException;
