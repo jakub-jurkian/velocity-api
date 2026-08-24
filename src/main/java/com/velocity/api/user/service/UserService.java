@@ -1,9 +1,11 @@
 package com.velocity.api.user.service;
 
+import com.velocity.api.common.City;
 import com.velocity.api.common.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.user.User;
 import com.velocity.api.user.dto.UserProfileResponse;
+import com.velocity.api.user.dto.UserProfileUpdateRequest;
 import com.velocity.api.user.dto.UserRegistrationRequest;
 import com.velocity.api.user.dto.UserRegistrationResponse;
 import com.velocity.api.user.repository.UserRepository;
@@ -16,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -51,5 +54,17 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
         return new UserProfileResponse(user.getId(), user.getEmail(), user.getFullName(), user.getPhone(), user.getRole(), user.getCity(), user.getJoinedDate());
+    }
+
+    @Transactional
+    public void updateProfile(UUID userId, UserProfileUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+
+        String fullName = request.fullName().isPresent() ? request.fullName().get() : user.getFullName();
+        String phone = request.phone().isPresent() ? request.phone().get() : user.getPhone();
+        City city = request.city().isPresent() ? request.city().get() : user.getCity();
+
+        user.updateProfile(fullName, phone, city);
     }
 }

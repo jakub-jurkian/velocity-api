@@ -7,6 +7,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -202,6 +203,16 @@ public class GlobalExceptionHandler {
                 "Invalid email or password."
         );
     }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ProblemDetail handleAuthorizationDeniedException(AuthorizationDeniedException ex) {
+        log.warn("Forbidden action: {}", ex.getMessage());
+        return ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN,
+                "Forbidden action."
+        );
+    }
+
 
     /**
      * Fallback handler for any unhandled exceptions.
