@@ -56,6 +56,15 @@ public class User {
         return new User(email, passwordHash, fullName, phone, UserRole.CLIENT, city);
     }
 
+    public void updateProfile(String fullName, String phone, City city) {
+        validateFullName(fullName);
+        validatePhone(phone);
+        validateCity(city);
+        this.fullName = fullName.trim();
+        this.phone = phone;
+        this.city = city;
+    }
+
     private User(String email, String passwordHash, String fullName, String phone, UserRole role, City city) {
         this.email = email;
         this.passwordHash = passwordHash;
@@ -64,5 +73,29 @@ public class User {
         this.role = role;
         this.city = city;
         this.status = UserStatus.ACTIVE;
+    }
+
+    private void validateFullName(String fullName) {
+        if (fullName == null || fullName.isBlank()) {
+            throw new IllegalArgumentException("Full name is required");
+        }
+        if (fullName.length() < 2 || fullName.length() > 100) {
+            throw new IllegalArgumentException("Name must be between 2 and 100 characters");
+        }
+    }
+
+    private void validatePhone(String phone) {
+        if (phone == null || phone.isBlank()) {
+            throw new IllegalArgumentException("Phone number is required");
+        }
+        if (!phone.matches("^\\+?[1-9]\\d{1,14}$")) {
+            throw new IllegalArgumentException("Phone must be a valid international format (e.g., +48123456789)");
+        }
+    }
+
+    private void validateCity(City city) {
+        if (city == null) {
+            throw new IllegalArgumentException("City is required");
+        }
     }
 }
