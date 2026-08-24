@@ -38,6 +38,7 @@ public class AuthenticationIntegrationTest {
     @Test
     void perform_asUserHelperInjected_authenticatesRequest() throws Exception {
         String testUserId = "999e4567-e89b-12d3-a456-426614174999";
+        String testUserEmail = "test@test.com";
         mockMvc.perform(
                         get("/v1/fake-endpoint-does-not-exist") // Fire at a fake URL
                                 .with(asUser(testUserId, "CLIENT"))     // <-- Inject our helper!
@@ -45,7 +46,7 @@ public class AuthenticationIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(jsonPath("$.title").value("Resource Not Found"))
-                .andExpect(authenticated().withUsername(testUserId))
+                .andExpect(authenticated().withUsername(testUserEmail))
                 .andExpect(authenticated().withRoles("CLIENT"));
     }
 }
