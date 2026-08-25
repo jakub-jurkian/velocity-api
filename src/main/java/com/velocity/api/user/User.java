@@ -1,5 +1,6 @@
 package com.velocity.api.user;
 
+import com.velocity.api.common.exception.InvalidUserStateException;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.common.City;
 import jakarta.persistence.*;
@@ -63,6 +64,30 @@ public class User {
         this.fullName = fullName.trim();
         this.phone = phone;
         this.city = city;
+    }
+
+    public void block() {
+        if (this.status == UserStatus.DELETED) {
+            throw new InvalidUserStateException("Cannot modify a deleted user.");
+        }
+        if (this.status == UserStatus.ACTIVE) {
+            this.status = UserStatus.BLOCKED;
+        }
+    }
+
+    public void unblock() {
+        if (this.status == UserStatus.DELETED) {
+            throw new InvalidUserStateException("Cannot modify a deleted user.");
+        }
+        if (this.status == UserStatus.BLOCKED) {
+            this.status = UserStatus.ACTIVE;
+        }
+    }
+
+    public void softDelete() {
+        if (this.status != UserStatus.DELETED) {
+            this.status = UserStatus.DELETED;
+        }
     }
 
     private User(String email, String passwordHash, String fullName, String phone, UserRole role, City city) {
