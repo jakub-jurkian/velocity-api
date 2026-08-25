@@ -9,6 +9,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -213,6 +214,29 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(InvalidUserStateException.class)
+    public ProblemDetail handleInvalidUserStateException(InvalidUserStateException ex) {
+        log.warn("Invalid User State Change: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNPROCESSABLE_CONTENT,
+                ex.getMessage()
+        );
+        problem.setTitle("Invalid User State Change");
+        return problem;
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ProblemDetail handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException ex) {
+        log.error("Wrong HTTP Method: ", ex);
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.METHOD_NOT_ALLOWED,
+                "Wrong HTTP Method."
+        );
+        problem.setTitle("Wrong HTTP Method");
+
+        return problem;
+    }
 
     /**
      * Fallback handler for any unhandled exceptions.

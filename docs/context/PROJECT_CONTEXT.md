@@ -1,161 +1,227 @@
-# VeloCity Fleet API - AI Context
+﻿# VeloCity Fleet API - AI Context
 
-Last updated: 2026-08-13
+Last updated: 2026-08-25
 
 > Single source of truth for AI assistants and contributors.
-> Keep this file aligned with the codebase, schema, ADRs, and delivery plan.
+> Keep this file aligned with the actual codebase, application configuration, security setup, and current implementation status.
 
 ## 1. Purpose
 
-Read this before changing code, generating issues, or opening PRs. This project is a Spring Boot backend for an e-bike rental platform. The important constraints are not "generic CRUD" constraints; they are reservation integrity, money accuracy, and clear API boundaries.
+This project is a Spring Boot backend for an e-bike rental platform. The primary engineering constraints are reservation integrity, exact financial calculations, clear API boundaries, and authenticated user actions. The current codebase is not a greenfield scaffold; it contains a working reservation flow, JWT-based auth, and scheduled lifecycle automation, while still exposing a few temporary implementation shortcuts.
 
-## 2. Stack
+## 2. Current stack
 
 - Java 25
 - Spring Boot 4.1.0
+- Spring Web MVC
 - Spring Data JPA / Hibernate
 - PostgreSQL 16
+- Redis 7 for JWT blacklist storage
 - Liquibase
+- Spring Security + JWT (JJWT)
+- Springdoc OpenAPI / Swagger UI
 - Maven
-- JUnit 5
-- Mockito
-- Spring Security crypto + spring-security-test
-- springdoc-openapi
+- JUnit 5 + Mockito + Spring test support
+- Docker Compose for local infrastructure
 
-Notes:
-- DTOs are used at controller boundaries, but MapStruct is not wired in yet.
-- No JWT implementation exists yet.
-- No Testcontainers usage exists yet.
+Important notes:
+- The app expects PostgreSQL and Redis to be running locally on localhost:5432 and localhost:6379.
+- ddl-auto is intentionally set to validate; schema changes are Liquibase-managed.
+- There is no MapStruct setup. Mapping is currently handwritten in BikeInstanceMapper.
 
-## 3. Domain Model
+## 3. Current package layout and architecture
+
+Core packages:
+- com.velocity.api.user — user model, DTOs, auth endpoints, and profile management
+- com.velocity.api.bike — bike domain model, fleet endpoints, and service
+- com.velocity.api.reservation — reservation domain, controller, service, and scheduler
+- com.velocity.api.security — JWT, filters, custom user details, and blacklist repository
+- com.velocity.api.billing — pricing rules
+- com.velocity.api.common — shared DTOs, exceptions, and global error handling
+- com.velocity.api.config — Spring Security and OpenAPI config
+
+Architecture rules currently visible in code:
+- Controllers speak HTTP and DTOs only; business logic stays in services.
+- Entities are persisted JPA models and do not expose public setters for most domain mutation.
+- Money is handled with BigDecimal.
+- Reservation overlap protection is implemented both in application logic and in the database layer.
+- ProblemDetail is the standard error envelope via GlobalExceptionHandler.
+- Security is stateless; JWTs are validated in a OncePerRequestFilter.
+
+## 4. Domain model (current code)
 
 ### User
 
-- Fields: `id`, `email`, `passwordHash`, `fullName`, `phone`, `status`, `role`, `city`, `joinedDate`
-- Relationships: `User -> Reservation` one-to-many
-- Rules:
-  - `email` and `phone` are unique.
-  - `joinedDate` is set in `@PrePersist`.
-  - Registration always stores a BCrypt hash, never a plain password.
+Fields:
+- id, email, passwordHash, fullName, phone, status, role, city, joinedDate
+
+Rules in current code:
+- email and phone are unique.
+- joinedDate is set in @PrePersist.
+- Registration uses User.registerClient(...) and stores a BCrypt hash.
+- User.updateProfile(...) validates full name, phone, and city.
+- UserStatus is currently ACTIVE, and the role is CLIENT by default.
 
 ### BikeModel
 
-- Fields: `id`, `name`, `description`, `speed`, `range`, `capacity`, `category`
-- Relationships: `BikeModel -> BikeInstance` one-to-many
-- Rules:
-  - `name` is unique.
-  - This is the abstract bike type, not a physical bike.
+Fields:
+- id, name, description, speed, range, capacity, category
+
+Rules in current code:
+- name is unique.
+- This is the abstract model or specification for a bike line.
 
 ### BikeInstance
 
-- Fields: `id`, `status`, `city`, `bikeModel`
-- Status enum: `ACTIVE`, `MAINTENANCE`, `LOST`, `RETIRED`
-- Relationships:
-  - `BikeInstance -> BikeModel` many-to-one
-  - `BikeInstance -> Reservation` one-to-many
-- Rules:
-  - Availability queries currently treat `ACTIVE` bikes as bookable.
-  - There is no bike status transition service yet.
+Fields:
+- id, status, city, bikeModel
+
+Status values:
+- ACTIVE, MAINTENANCE, LOST, RETIRED
+
+Rules in current code:
+- A bike is created with BikeInstance.initialize(model, city).
+- Current availability logic treats only ACTIVE bikes as bookable.
+- The hardware state is checked in reservation creation before database insert.
 
 ### Reservation
 
-- Fields: `id`, `startDate`, `endDate`, `totalCost`, `status`, `createdAt`, `version`, `user`, `bikeInstance`
-- Status enum: `PENDING`, `CONFIRMED`, `COMPLETED`, `CANCELLED`
-- Relationships:
-  - `Reservation -> User` many-to-one
-  - `Reservation -> BikeInstance` many-to-one
-- Rules:
-  - `totalCost` is a persisted snapshot.
-  - `createdAt` is set in `@PrePersist`.
-  - `@Version` exists for lost-update protection on updates to an existing row.
-  - Valid transitions:
-    - `PENDING -> CONFIRMED`
-    - `PENDING -> CANCELLED`
-    - `CONFIRMED -> COMPLETED`
-    - `CONFIRMED -> CANCELLED`
-  - Invalid transitions throw `InvalidStatusTransitionException`.
+Fields:
+- id, startDate, endDate, totalCost, status, createdAt, version, user, bikeInstance
 
-## 4. Architectural Rules
+Status values:
+- PENDING, CONFIRMED, COMPLETED, CANCELLED
 
-- **DTOs at every controller boundary.** Entities do not leave the service layer, which keeps persistence details and lazy-loading concerns out of the API contract.
-- **Money uses `BigDecimal` only.** This avoids floating-point rounding errors in rental pricing.
-- **Reservation overlap is enforced in PostgreSQL.** The hard guarantee is a Liquibase-managed exclusion constraint on active reservations using `daterange(..., '[)')` and `btree_gist`; service-side checks are only for friendlier 409 responses.
-- **`@Version` is for update races, not booking overlap.** It protects state changes on existing reservation rows, not the initial insert race.
-- **Status transitions stay out of controllers.** Reservation lifecycle rules live in the domain entity and service layer so they stay testable and centralized.
-- **List endpoints return paged responses.** The current pattern is `Page<T>` in the service and `PaginatedResponse<T>` at the API boundary.
-- **Validation lives on request DTOs.** `@Valid`, bean validation annotations, and `ProblemDetail` responses are the standard.
-- **Liquibase is the schema source of truth.** `spring.jpa.hibernate.ddl-auto=validate` is intentional.
-- **`open-in-view` stays off.** Controllers must not rely on lazy entity access after transaction boundaries.
-- **Passwords are always hashed with BCrypt.** Plain-text passwords must never be persisted or returned.
+Rules in current code:
+- totalCost is stored as a persisted snapshot.
+- createdAt is assigned in @PrePersist.
+- @Version is present for optimistic locking on updates.
+- Valid transitions are enforced in Reservation.transitionTo(...):
+  - PENDING -> CONFIRMED
+  - PENDING -> CANCELLED
+  - CONFIRMED -> COMPLETED
+  - CONFIRMED -> CANCELLED
+- Invalid transitions throw InvalidStatusTransitionException.
 
-## 5. Anti-Patterns
+## 5. Security and authentication
 
-- No field injection
-- No entities returned from controllers
-- No business logic in controllers
-- No trusting client-sent prices
-- No double-booking by application-side check-then-act logic
-- No `double` or `float` for money
-- No changing reservation state from the controller layer
+The app currently has a real JWT-based auth layer.
 
-## 6. Glossary
+Current security setup:
+- SecurityConfig enables stateless sessions and a JWT filter.
+- JwtAuthenticationFilter reads the Authorization header and sets an authenticated principal if the token is valid and not blacklisted.
+- CustomUserDetailsService loads the user by email.
+- CustomUserDetails includes the user UUID as id, which is used in @PreAuthorize checks.
+- JwtService creates and validates signed JWTs with JJWT.
+- AuthService issues JWTs on login, with extra claims id and role.
+- TokenBlacklistRepository stores blacklisted tokens in Redis with a TTL.
+- BCryptPasswordEncoder is used for hashing.
 
-- **BikeModel** - the abstract bike type, such as a product line or spec sheet
-- **BikeInstance** - one physical bike with its own ID, city, status, and model reference
-- **Reservation** - a booking for one bike instance over a date range
-- **Active reservation** - a reservation with status `PENDING` or `CONFIRMED`
+Public endpoints currently:
+- POST /api/v1/auth/register
+- POST /api/v1/auth/login
+- Swagger and OpenAPI endpoints under /api/swagger-ui/** and /api/api-docs/**
 
-## 7. Conventions
+Authenticated endpoints currently:
+- POST /api/v1/auth/logout
+- GET /api/v1/auth/me
+- PATCH /api/v1/users/{id}
+- POST /api/v1/reservations
+- GET /api/v1/reservations/availability
+- GET /api/v1/fleet
 
-- Issue template: `.github/issue_template.md`
-- PR template: `.github/pull_request_template.md`
-- Commit style: conventional commits are used in history (`docs: ...`, `feat: ...`, etc.)
-- Branch naming: concise slash-separated names are used in practice, for example `docs/update-readme`
-- Testing: JUnit 5 + Mockito, with parameterized domain tests and thin integration tests
-- CI: GitHub Actions runs `mvn clean test` on `main` against PostgreSQL 16 and JDK 25
-- API docs: Swagger UI at `/api/swagger-ui.html`, OpenAPI JSON at `/api/api-docs`
+Important implementation note:
+- ReservationController.book(...) currently hardcodes the authenticated user UUID to 00000000-0000-0000-0000-000000000001 instead of resolving the real principal from Spring Security.
+- This is a temporary in-code shortcut rather than a finished auth integration and should be treated as a known implementation detail while working in the codebase.
 
-## 8. Current Sprint / Where I Am
+## 6. Current API surface
 
-- Day 41/90
-- Last completed: reservation conflict integration testing (#15), bike availability check (#16), optimistic-lock conflict handling on updates (#17), @Scheduled reservation lifecycle jobs (#18), N+1 query diagnosis (#19), and domain layer refactoring to strictly enforce ADR-002 (removed public setters/constructors, added static factory methods).
-- In progress: fleet status management (#20).
-- Next up: JWT authentication filter chain (#21), Login endpoint issuing JWT (#22), `/auth/me` and `/auth/logout` endpoints (#23), user profile update (#24), and admin user management (#25).
+### Auth
+- POST /api/v1/auth/register — register a new client account
+- POST /api/v1/auth/login — authenticate and return a JWT
+- POST /api/v1/auth/logout — blacklist the bearer token in Redis
+- GET /api/v1/auth/me — fetch the current authenticated user profile
 
-## 9. Reference, Don't Duplicate
+### Users
+- PATCH /api/v1/users/{id} — update a user profile; protected by @PreAuthorize("#id == authentication.principal.id")
 
-- Full schema: `src/main/resources/db/changelog/`
-- Runtime config: `src/main/resources/application.yaml`
-- Liquibase config: `src/main/resources/liquibase.yml`
-- ADRs:
-  - `docs/adrs/0001-prevent-reservation-race-conditions.md`
-  - `docs/adrs/0002-adopt-rich-domain-model-architecture.md`
-- API docs: Springdoc OpenAPI
+### Fleet
+- GET /api/v1/fleet — paginated list of active bikes (BikeStatus.ACTIVE)
 
-## 10. Current API Surface
+### Reservations
+- POST /api/v1/reservations — book a bike for a date range
+- GET /api/v1/reservations/availability — list available model options for a date range
 
-- `POST /api/v1/auth/register`
-- `GET /api/v1/fleet`
-- `POST /api/v1/reservations`
-- `GET /api/v1/reservations/availability`
+## 7. Reservation logic and booking guarantees
 
-## 11. Current Implementation Notes
+The booking logic is intentionally strong:
+- ReservationService.book(...) validates the bike is ACTIVE.
+- It checks reservationRepository.isBikeAvailable(...) before save.
+- It computes totalCost with RentalCostCalculator based on a BigDecimal daily rate.
+- It persists a reservation with status PENDING.
+- The database layer adds a PostgreSQL exclusion constraint to prevent active reservation overlaps.
 
-- `UserService` handles registration and uses `PasswordEncoder`.
-- `FleetService` returns only active bike instances.
-- Core domain entities (`Reservation`, `User`, `BikeModel`, `BikeInstance`) fully comply with ADR-002, utilizing protected constructors and static factory methods to prevent invalid state instantiation.
-- `ReservationService` orchestrates cost calculation, persistence, and status assignment for new bookings.
-- `GlobalExceptionHandler` maps validation failures, missing resources, conflicts (including intelligent root-cause inspection for PostgreSQL exclusion constraints), invalid bike states, invalid status transitions, and uncaught exceptions to `ProblemDetail`.
-- Paginated responses (like `/api/v1/fleet`) are wrapped in a generic `PaginatedResponse<T>` envelope with static factory mapping to decouple API contracts from Spring Data `Page` objects.
-- Reservation creation endpoint (`POST /api/v1/reservations`) is fully implemented with DTO protection and `@Valid` date-range validation.
-- There is no JWT filter, token service, or login endpoint yet.
-- The current mapper is handwritten (`BikeInstanceMapper`), not MapStruct-generated.
+This means the app is trying to satisfy the hard guarantee: the booking cannot double-book a bike at the database level, even if the app-level check happens concurrently.
 
-## 12. Plan Alignment
+## 8. Lifecycle automation and scheduled jobs
 
-The 90-day plan in `VeloCity_Fleet_API_Plan_90_Days.docx` is a guide, not a perfect match for current code. Current code already includes a few additions and corrections:
+The app includes a reservation lifecycle scheduler:
+- ReservationLifecycleScheduler runs on a fixed interval (@Scheduled(fixedRate = 10000) in current code) for test or dev convenience.
+- It cancels stale pending reservations older than 30 minutes.
+- It completes past-due confirmed reservations once their end date has passed.
 
-- Rich domain behavior for reservations is implemented.
-- Pricing is server-side and BigDecimal-based.
-- Reservation overlap strategy follows ADR-001 and uses a database constraint, not optimistic locking alone.
-- Security is only partially present so far.
+This is active code, but the schedule is not final production timing; it is currently a short-interval job for testing and validation.
+
+## 9. Error handling and validation
+
+GlobalExceptionHandler covers:
+- validation failures (MethodArgumentNotValidException -> 400)
+- missing resources (ResourceNotFoundException, NoResourceFoundException -> 404)
+- duplicate email conflict (EmailAlreadyRegisteredException -> 409)
+- database integrity and overlap conflicts (DataIntegrityViolationException, CannotAcquireLockException -> 409)
+- invalid reservation transitions (InvalidStatusTransitionException -> 422)
+- invalid bike state (InvalidBikeStateException -> 422)
+- bad credentials (BadCredentialsException -> 401)
+- forbidden actions (AuthorizationDeniedException -> 403)
+- generic server errors -> 500
+
+The app uses RFC7807 ProblemDetail responses rather than raw exceptions.
+
+## 10. Database and migration model
+
+Current database conventions in code:
+- spring.jpa.hibernate.ddl-auto=validate
+- Liquibase is the schema source of truth.
+- PostgreSQL-specific overlap handling is part of the schema or changelog rather than a JPA-only concern.
+- @Version is present to protect update races but is not the main overlap protection mechanism.
+
+## 11. Current implementation status and known gaps
+
+This app is more advanced than the older planning notes, but it still has obvious gaps:
+- JWT auth is implemented and wired into Spring Security.
+- Registration, login, logout, and profile retrieval are present.
+- Reservation booking and availability checks are implemented.
+- Reservation scheduling automation is in place.
+- Fleet listing is implemented for ACTIVE bikes and paginated responses.
+- Admin fleet management, richer role management, and a full production-grade user or admin lifecycle are not yet implemented.
+- The booking action still depends on a hardcoded user ID in ReservationController instead of resolving the authenticated principal.
+- The current scheduler cadence is intentionally short for testing and is not a final production schedule.
+
+## 12. Reference files
+
+- Runtime configuration: src/main/resources/application.yaml
+- Spring Security config: src/main/java/com/velocity/api/config/SecurityConfig.java
+- Auth controller: src/main/java/com/velocity/api/user/controller/AuthController.java
+- User profile controller: src/main/java/com/velocity/api/user/controller/UserController.java
+- Fleet controller: src/main/java/com/velocity/api/bike/controller/FleetController.java
+- Reservation controller: src/main/java/com/velocity/api/reservation/controller/ReservationController.java
+- Reservation service: src/main/java/com/velocity/api/reservation/service/ReservationService.java
+- Reservation entity: src/main/java/com/velocity/api/reservation/Reservation.java
+- User entity: src/main/java/com/velocity/api/user/User.java
+- Bike entity: src/main/java/com/velocity/api/bike/BikeInstance.java
+- Global exception handler: src/main/java/com/velocity/api/common/exception/GlobalExceptionHandler.java
+- Reservation scheduler: src/main/java/com/velocity/api/reservation/scheduler/ReservationLifecycleScheduler.java
+
+## 13. Planning note
+
+This file reflects the actual current state of the repository as of 2026-08-25. If the application evolves, update this document together with the code so AI agents and contributors work from a single accurate source of truth.
