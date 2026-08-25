@@ -14,7 +14,8 @@
                     '+48987654321', 'CLIENT', 'ACTIVE', 'WROCLAW', '2026-06-15'),
                    ('44444444-4444-4444-4444-444444444444', 'Dave Blocked', 'dave@velocity.com', 'hashed_pw_4',
                     '+48111222333', 'CLIENT', 'BLOCKED', 'GDANSK', '2026-05-01'),
-                   ('33333333-3333-3333-3333-333333333333', 'Charlie Admin', 'admin@velocity.com', 'hashed_pw_3',
+                   ('33333333-3333-3333-3333-333333333333', 'Charlie Admin', 'admin@velocity.com',
+                    '$2a$10$8MJj/eiNAhpb0lvUIxHnxut7UiMsD7pdsTdUJGxsrtebf6TCF4onG',
                     '+48000000000', 'ADMIN', 'ACTIVE', 'GDANSK', '2026-01-01') ON CONFLICT (id) DO NOTHING;
 
             -- ══════════════════════════════════ BIKE MODELS ══════════════════════════════════
