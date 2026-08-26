@@ -1,4 +1,4 @@
-package com.velocity.api.common.exception;
+package com.velocity.api.reservation.exception;
 
 import com.velocity.api.reservation.ReservationStatus;
 

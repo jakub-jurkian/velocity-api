@@ -1,7 +1,6 @@
-package com.velocity.api.User;
+package com.velocity.api.user;
 
 import com.velocity.api.common.City;
-import com.velocity.api.user.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -29,9 +28,7 @@ public class UserTest {
     void updateProfile_invalidData_throwsException(String invalidName, String invalidPhone, City invalidCity, String expectedMessage) {
         User user = User.registerClient("test@test.com", "hashed", "Test", "+48000000000", City.GDANSK);
 
-        assertThatThrownBy(() -> {
-            user.updateProfile(invalidName, invalidPhone, invalidCity);
-        }).hasMessageContaining(expectedMessage);
+        assertThatThrownBy(() -> user.updateProfile(invalidName, invalidPhone, invalidCity)).hasMessageContaining(expectedMessage);
     }
 
     static Stream<Arguments> updateProfile_invalidData_throwsException() {

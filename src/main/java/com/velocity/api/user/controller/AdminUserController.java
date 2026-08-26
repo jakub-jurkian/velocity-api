@@ -23,22 +23,7 @@ public class AdminUserController {
     @GetMapping("/users")
     public ResponseEntity<PaginatedResponse<AdminUserResponse>> listUsers(@ParameterObject Pageable pageable) {
         Page<AdminUserResponse> userPage = adminUserService.listUsers(pageable);
-        PaginatedResponse.PaginationMeta meta = new PaginatedResponse.PaginationMeta(
-                userPage.getNumber(),
-                userPage.getSize(),
-                userPage.getTotalElements(),
-                userPage.getTotalPages(),
-                userPage.isFirst(),
-                userPage.isLast(),
-                userPage.hasNext(),
-                userPage.hasPrevious()
-        );
-
-        PaginatedResponse<AdminUserResponse> response = new PaginatedResponse<>(
-                userPage.getContent(),
-                meta
-        );
-
+        PaginatedResponse<AdminUserResponse> response = PaginatedResponse.from(userPage);
         return ResponseEntity.ok(response);
     }
 

@@ -1,4 +1,4 @@
-package com.velocity.api.common.exception;
+package com.velocity.api.user.exception;
 
 public class InvalidUserStateException extends RuntimeException {
     public InvalidUserStateException(String message) {

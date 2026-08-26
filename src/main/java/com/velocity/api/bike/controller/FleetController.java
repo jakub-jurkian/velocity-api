@@ -1,6 +1,6 @@
 package com.velocity.api.bike.controller;
 
-import com.velocity.api.bike.dto.BikeInstanceDto;
+import com.velocity.api.bike.dto.BikeInstanceResponse;
 import com.velocity.api.bike.service.FleetService;
 import com.velocity.api.common.dto.PaginatedResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,32 +33,16 @@ public class FleetController {
      * Only bikes with an ACTIVE status are included in the result set.
      *
      * @param pageable the pagination and sorting configuration (page number, size, and sorting criteria)
-     * @return a {@link ResponseEntity} containing a {@link PaginatedResponse} of {@link BikeInstanceDto} objects
+     * @return a {@link ResponseEntity} containing a {@link PaginatedResponse} of {@link BikeInstanceResponse} objects
      */
     @GetMapping
     @Operation(
             summary = "Retrieve available bikes",
             description = "Returns a paginated list of all e-bikes currently marked with an ACTIVE status."
     )
-    public ResponseEntity<PaginatedResponse<BikeInstanceDto>> getActiveBikes(@ParameterObject @PageableDefault(size = 20) Pageable pageable) {
-        Page<BikeInstanceDto> bikePage = fleetService.getActiveBikes(pageable);
-
-        PaginatedResponse.PaginationMeta meta = new PaginatedResponse.PaginationMeta(
-                bikePage.getNumber(),          // Current page number (0-indexed)
-                bikePage.getSize(),            // Items per page
-                bikePage.getTotalElements(),   // Total bikes in the DB
-                bikePage.getTotalPages(),      // Total pages calculated by the DB
-                bikePage.isFirst(),
-                bikePage.isLast(),
-                bikePage.hasNext(),
-                bikePage.hasPrevious()
-        );
-
-        PaginatedResponse<BikeInstanceDto> response = new PaginatedResponse<>(
-                bikePage.getContent(),
-                meta
-        );
-
+    public ResponseEntity<PaginatedResponse<BikeInstanceResponse>> getActiveBikes(@ParameterObject @PageableDefault(size = 20) Pageable pageable) {
+        Page<BikeInstanceResponse> bikePage = fleetService.getActiveBikes(pageable);
+        PaginatedResponse<BikeInstanceResponse> response = PaginatedResponse.from(bikePage);
         return ResponseEntity.ok(response);
     }
 }

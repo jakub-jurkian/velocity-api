@@ -1,6 +1,7 @@
 package com.velocity.api.user.controller;
 
 import com.velocity.api.user.dto.UserProfileUpdateRequest;
+import com.velocity.api.user.dto.UserProfileResponse;
 import com.velocity.api.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,5 +21,11 @@ public class UserController {
     public ResponseEntity<Void> updateProfile(@PathVariable("id") UUID id, @RequestBody UserProfileUpdateRequest request) {
         userService.updateProfile(id, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileResponse> getProfile() {
+        UserProfileResponse response = userService.getProfile();
+        return ResponseEntity.ok(response);
     }
 }

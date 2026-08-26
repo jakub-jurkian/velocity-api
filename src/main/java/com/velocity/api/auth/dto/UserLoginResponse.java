@@ -1,4 +1,4 @@
-package com.velocity.api.user.dto;
+package com.velocity.api.auth.dto;
 
 public record UserLoginResponse(
         String accessToken,

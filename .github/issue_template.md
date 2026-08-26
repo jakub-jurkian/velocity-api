@@ -20,9 +20,5 @@
 - **Execution:**
 - **Scope:**
 
-### Dependencies
-- Blocked by:
-- Blocks:
-
 ### Risks / Edge Cases
 <!-- concurrency, race conditions, data migration risk, etc. -->

@@ -1,6 +1,6 @@
 package com.velocity.api.reservation;
 
-import com.velocity.api.common.exception.InvalidStatusTransitionException;
+import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -43,9 +43,7 @@ public class ReservationTest {
         Reservation reservation = new Reservation();
         ReflectionTestUtils.setField(reservation, "status", from);
 
-        InvalidStatusTransitionException exception = assertThrows(InvalidStatusTransitionException.class, () -> {
-            reservation.transitionTo(to);
-        });
+        InvalidStatusTransitionException exception = assertThrows(InvalidStatusTransitionException.class, () -> reservation.transitionTo(to));
 
         assertTrue(exception.getMessage().contains(from.name()),
                 "Message should contain FROM state: " + from);

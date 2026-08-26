@@ -64,9 +64,7 @@ public class JwtServiceTest {
         extraClaims.put("role", "CLIENT");
         String generatedToken = jwtService.generateToken(extraClaims, userDetails);
         // Act & Assert
-        assertThrows(ExpiredJwtException.class, () -> {
-            jwtService.extractUsername(generatedToken);
-        });
+        assertThrows(ExpiredJwtException.class, () -> jwtService.extractUsername(generatedToken));
     }
 
     @Test
@@ -85,8 +83,6 @@ public class JwtServiceTest {
         JwtService hackerService = new JwtService();
         ReflectionTestUtils.setField(hackerService, "secretKey", "303E635266556A586E3272357538782F413F4428472B4B6250645367566B5970");
         // Act & Assert
-        assertThrows(SignatureException.class, () -> {
-            hackerService.extractUsername(generatedToken);
-        });
+        assertThrows(SignatureException.class, () -> hackerService.extractUsername(generatedToken));
     }
 }

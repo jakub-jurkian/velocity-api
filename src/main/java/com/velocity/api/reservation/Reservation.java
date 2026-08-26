@@ -1,7 +1,7 @@
 package com.velocity.api.reservation;
 
 import com.velocity.api.bike.BikeInstance;
-import com.velocity.api.common.exception.InvalidStatusTransitionException;
+import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
 import com.velocity.api.user.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

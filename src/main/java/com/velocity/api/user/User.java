@@ -1,6 +1,6 @@
 package com.velocity.api.user;
 
-import com.velocity.api.common.exception.InvalidUserStateException;
+import com.velocity.api.user.exception.InvalidUserStateException;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.common.City;
 import jakarta.persistence.*;

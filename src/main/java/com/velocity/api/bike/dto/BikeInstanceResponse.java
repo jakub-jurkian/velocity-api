@@ -5,9 +5,10 @@ import com.velocity.api.common.City;
 
 import java.util.UUID;
 
-public record BikeInstanceDto(
+public record BikeInstanceResponse(
         UUID id,
         BikeStatus status,
         City city,
         UUID bikeModelId
-) {}
+) {
+}

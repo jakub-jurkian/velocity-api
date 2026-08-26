@@ -1,4 +1,4 @@
-package com.velocity.api.user.dto;
+package com.velocity.api.auth.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;

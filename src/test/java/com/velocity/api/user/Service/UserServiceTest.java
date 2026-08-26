@@ -1,4 +1,4 @@
-package com.velocity.api.User.Service;
+package com.velocity.api.user.Service;
 
 import com.velocity.api.common.City;
 import com.velocity.api.common.exception.ResourceNotFoundException;
@@ -96,9 +96,7 @@ public class UserServiceTest {
                 JsonNullable.undefined()
         );
 
-        assertThatThrownBy(() -> {
-            userService.updateProfile(user.getId(), request);
-        }).isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> userService.updateProfile(user.getId(), request)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Phone number is required");
     }
 
@@ -132,9 +130,7 @@ public class UserServiceTest {
                 JsonNullable.undefined()
         );
 
-        assertThatThrownBy(() -> {
-            userService.updateProfile(UUID.randomUUID(), request);
-        }).isInstanceOf(ResourceNotFoundException.class)
+        assertThatThrownBy(() -> userService.updateProfile(UUID.randomUUID(), request)).isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found");
     }
 

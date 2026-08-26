@@ -1,8 +1,7 @@
-package com.velocity.api.User.Controller;
+package com.velocity.api.user.controller;
 
 import com.velocity.api.config.SecurityConfig;
 import com.velocity.api.security.JwtAuthenticationFilter;
-import com.velocity.api.user.controller.UserController;
 import com.velocity.api.user.service.UserService;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,7 +18,6 @@ import java.util.UUID;
 import static com.velocity.api.security.SecurityTestHelper.asUser;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
