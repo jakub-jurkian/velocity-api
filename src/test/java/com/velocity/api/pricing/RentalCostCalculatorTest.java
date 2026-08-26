@@ -1,4 +1,4 @@
-package com.velocity.api.billing;
+package com.velocity.api.pricing;
 
 
 import org.junit.jupiter.api.DisplayName;
@@ -47,8 +47,6 @@ public class RentalCostCalculatorTest {
         RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("15.50"));
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> {
-            calculator.calculate(rentalDays);
-        });
+        assertThrows(IllegalArgumentException.class, () -> calculator.calculate(rentalDays));
     }
 }

@@ -2,7 +2,6 @@ package com.velocity.api.security;
 
 
 import com.velocity.api.security.repository.TokenBlacklistRepository;
-import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.Test;
