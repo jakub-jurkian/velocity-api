@@ -1,4 +1,4 @@
-package com.velocity.api.billing;
+package com.velocity.api.pricing;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
