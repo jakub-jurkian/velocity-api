@@ -1,4 +1,4 @@
-package com.velocity.api.common.exception;
+package com.velocity.api.bike.exception;
 
 public class InvalidBikeStateException extends RuntimeException {
     public InvalidBikeStateException(String message) {

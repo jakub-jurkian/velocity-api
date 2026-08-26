@@ -1,12 +1,16 @@
-package com.velocity.api.user.controller;
+package com.velocity.api.auth.controller;
 
+import com.velocity.api.auth.dto.UserLoginRequest;
+import com.velocity.api.auth.dto.UserLoginResponse;
+import com.velocity.api.auth.dto.UserRegistrationRequest;
+import com.velocity.api.auth.dto.UserRegistrationResponse;
+import com.velocity.api.auth.service.AuthService;
 import com.velocity.api.user.dto.*;
-import com.velocity.api.user.service.AuthService;
-import com.velocity.api.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -16,12 +20,11 @@ import java.net.URI;
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
-    private final UserService userService;
     private final AuthService authService;
 
     @PostMapping("/register")
     public ResponseEntity<UserRegistrationResponse> registerUser(@Valid @RequestBody UserRegistrationRequest request) {
-        UserRegistrationResponse response = userService.registerUser(request);
+        UserRegistrationResponse response = authService.registerUser(request);
 
         URI location = ServletUriComponentsBuilder
                 .fromCurrentContextPath()       // Gets http://localhost:8080
@@ -40,16 +43,11 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logoutUser(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
-        if (authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            authService.logout(token);
+        if ((authHeader.isBlank() || !authHeader.startsWith("Bearer ")) || authHeader.length() > 7) {
+            throw new BadCredentialsException("Invalid or missing Bearer token");
         }
+        String token = authHeader.substring(7).strip();
+        authService.logout(token);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<UserProfileResponse> getProfile() {
-        UserProfileResponse response = userService.getProfile();
-        return ResponseEntity.ok(response);
     }
 }

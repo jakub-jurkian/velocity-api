@@ -1,5 +1,10 @@
 package com.velocity.api.common.exception;
 
+import com.velocity.api.bike.exception.BikeNotAvailableException;
+import com.velocity.api.bike.exception.InvalidBikeStateException;
+import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
+import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
+import com.velocity.api.user.exception.InvalidUserStateException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataAccessException;
