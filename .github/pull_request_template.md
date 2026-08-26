@@ -4,25 +4,17 @@
 
 Closes #
 
-
-
 ## What Changed
 
 [Detail the exact technical changes and architecture decisions made in this PR.]
 
 -
-
 -
-
-
 
 ## Testing
 
 - [ ] Unit tests written and passing
-
 - [ ] Application compiles and starts successfully
-
-
 
 ## Notes FOR the Reviewer
 
