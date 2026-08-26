@@ -1,12 +1,12 @@
-package com.velocity.api.security;
+package com.velocity.api.auth.service;
 
 import com.velocity.api.common.City;
+import com.velocity.api.security.JwtService;
 import com.velocity.api.security.repository.TokenBlacklistRepository;
 import com.velocity.api.user.User;
 import com.velocity.api.auth.dto.UserLoginRequest;
 import com.velocity.api.auth.dto.UserLoginResponse;
 import com.velocity.api.user.repository.UserRepository;
-import com.velocity.api.auth.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
