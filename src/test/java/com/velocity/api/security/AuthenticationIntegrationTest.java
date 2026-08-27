@@ -1,5 +1,6 @@
 package com.velocity.api.security;
 
+import com.velocity.api.BaseIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL) // Tells JUnit to let Spring inject
 @RequiredArgsConstructor // creates constructor
 @ActiveProfiles("test")
-public class AuthenticationIntegrationTest {
+public class AuthenticationIntegrationTest extends BaseIntegrationTest {
 
     private final MockMvc mockMvc;
 

@@ -1,5 +1,6 @@
 package com.velocity.api.reservation.scheduler;
 
+import com.velocity.api.BaseIntegrationTest;
 import com.velocity.api.bike.BikeInstance;
 import com.velocity.api.bike.repository.BikeInstanceRepository;
 import com.velocity.api.bike.repository.BikeModelRepository;
@@ -27,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestDataFactory.class) // This explicitly pulls the factory into the test context
-public class ReservationSchedulerIntegrationTest {
+public class ReservationSchedulerIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private ReservationLifecycleScheduler scheduler;
     @Autowired
