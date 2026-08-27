@@ -1,5 +1,6 @@
 package com.velocity.api.reservation;
 
+import com.velocity.api.BaseIntegrationTest;
 import com.velocity.api.bike.BikeCategory;
 import com.velocity.api.bike.BikeInstance;
 import com.velocity.api.bike.BikeModel;
@@ -37,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @AutoConfigureTestRestTemplate
-public class ReservationConcurrencyIntegrationTest {
+public class ReservationConcurrencyIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
     @Autowired
