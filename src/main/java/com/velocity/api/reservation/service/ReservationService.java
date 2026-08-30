@@ -10,14 +10,15 @@ import com.velocity.api.bike.exception.InvalidBikeStateException;
 import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
-import com.velocity.api.reservation.dto.AvailableModelResponse;
-import com.velocity.api.reservation.dto.ReservationBookRequest;
-import com.velocity.api.reservation.dto.ReservationBookResponse;
+import com.velocity.api.reservation.dto.*;
+import com.velocity.api.reservation.mapper.ReservationMapper;
 import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.user.User;
 import com.velocity.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
     private final RentalCostCalculator rentalCostCalculator;
+    private final ReservationMapper reservationMapper;
 
     @Transactional
     public void transitionStatus(UUID reservationId, ReservationStatus newStatus) {
@@ -72,7 +74,7 @@ public class ReservationService {
                 req.startDate(),
                 req.endDate()
         );
-        ReservationBookResponse.BikeSummary bikeSummary = new ReservationBookResponse.BikeSummary(bike.getId(), bike.getBikeModel().getName(), bike.getCity());
+        BikeSummary bikeSummary = new BikeSummary(bike.getId(), bike.getBikeModel().getName(), bike.getCity());
         return new ReservationBookResponse(
                 bookedReservation.getId(),
                 bookedReservation.getStartDate(),
@@ -115,5 +117,10 @@ public class ReservationService {
         Reservation pastDueConfirmedReservation = reservationRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Reservation not found"));
         pastDueConfirmedReservation.transitionTo(ReservationStatus.COMPLETED);
+    }
+
+    public Page<ReservationResponse> getUserReservations(UUID id, Pageable page) {
+        Page<Reservation> reservationsPage = reservationRepository.findByUserId(id, page);
+        return reservationsPage.map(reservationMapper::toDto);
     }
 }
