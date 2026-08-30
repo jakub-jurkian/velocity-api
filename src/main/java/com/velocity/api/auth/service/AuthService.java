@@ -2,11 +2,13 @@ package com.velocity.api.auth.service;
 
 import com.velocity.api.auth.dto.UserRegistrationRequest;
 import com.velocity.api.auth.dto.UserRegistrationResponse;
+import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.security.JwtService;
 import com.velocity.api.security.repository.TokenBlacklistRepository;
 import com.velocity.api.user.User;
 import com.velocity.api.auth.dto.UserLoginRequest;
 import com.velocity.api.auth.dto.UserLoginResponse;
+import com.velocity.api.user.dto.UserProfileResponse;
 import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -81,5 +85,14 @@ public class AuthService {
         Instant expirationDate = jwtService.extractExpiration(token);
         Duration ttl = Duration.between(Instant.now(), expirationDate);
         if (!ttl.isNegative() && !ttl.isZero()) tokenBlacklistRepository.blacklist(token, ttl);
+    }
+
+    public UserProfileResponse getProfile() {
+        UserDetails userDetails = (UserDetails) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
+        assert userDetails != null;
+        String email = userDetails.getUsername();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+        return new UserProfileResponse(user.getId(), user.getEmail(), user.getFullName(), user.getPhone(), user.getRole(), user.getCity(), user.getJoinedDate());
     }
 }

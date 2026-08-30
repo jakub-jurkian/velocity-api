@@ -50,4 +50,10 @@ public class AuthController {
         authService.logout(token);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileResponse> getProfile() {
+        UserProfileResponse response = authService.getProfile();
+        return ResponseEntity.ok(response);
+    }
 }
