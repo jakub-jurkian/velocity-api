@@ -1,5 +1,6 @@
 package com.velocity.api.user.Service;
 
+import com.velocity.api.auth.service.AuthService;
 import com.velocity.api.common.City;
 import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.user.User;
@@ -35,6 +36,8 @@ public class UserServiceTest {
 
     @InjectMocks
     private UserService userService;
+    @InjectMocks
+    private AuthService authService;
 
     @DisplayName("Given a valid session but missing user, getProfile should throw exception")
     @Test
@@ -57,7 +60,7 @@ public class UserServiceTest {
         when(userRepository.findByEmail(testEmail)).thenReturn(Optional.empty());
 
         // Act & Assert: Prove that the exception is thrown and halts execution
-        assertThatThrownBy(() -> userService.getProfile())
+        assertThatThrownBy(() -> authService.getProfile())
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining(testEmail);
 
