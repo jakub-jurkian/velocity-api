@@ -38,6 +38,17 @@ public class TestDataFactory {
         return userRepository.save(testUser);
     }
 
+    public User createAndSaveUser(String email, String password) {
+        User testUser = User.registerClient(
+                email,
+                password,
+                "Integration Test User",
+                "+48123456729",
+                City.WARSAW
+        );
+        return userRepository.save(testUser);
+    }
+
     public BikeInstance createAndSaveDefaultBike() {
         BikeModel testModel = BikeModel.create(
                 "Integration Test Model " + UUID.randomUUID(),
