@@ -4,10 +4,12 @@ import com.velocity.api.reservation.dto.AvailableModelResponse;
 import com.velocity.api.reservation.dto.ReservationBookRequest;
 import com.velocity.api.reservation.dto.ReservationBookResponse;
 import com.velocity.api.reservation.service.ReservationService;
+import com.velocity.api.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -22,9 +24,10 @@ public class ReservationController {
 
     @PostMapping
     public ResponseEntity<ReservationBookResponse> book(
-            @Valid @RequestBody ReservationBookRequest request
+            @Valid @RequestBody ReservationBookRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        UUID authenticatedUserId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID authenticatedUserId = userDetails.getId();
         ReservationBookResponse response = reservationService.book(authenticatedUserId, request);
 
         return ResponseEntity
