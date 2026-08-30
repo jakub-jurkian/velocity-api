@@ -1,12 +1,16 @@
 package com.velocity.api.reservation.controller;
 
+import com.velocity.api.common.dto.PaginatedResponse;
 import com.velocity.api.reservation.dto.AvailableModelResponse;
 import com.velocity.api.reservation.dto.ReservationBookRequest;
 import com.velocity.api.reservation.dto.ReservationBookResponse;
+import com.velocity.api.reservation.dto.ReservationResponse;
 import com.velocity.api.reservation.service.ReservationService;
 import com.velocity.api.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -38,6 +42,14 @@ public class ReservationController {
     @GetMapping("/availability")
     public ResponseEntity<List<AvailableModelResponse>> getAvailableModels(@RequestParam LocalDate startDate, @RequestParam LocalDate endDate) {
         List<AvailableModelResponse> response = reservationService.getAvailableModels(startDate, endDate);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<PaginatedResponse<ReservationResponse>> getUserReservations(@AuthenticationPrincipal CustomUserDetails userDetails, Pageable pageable) {
+        UUID authenticatedUserId = userDetails.getId();
+        Page<ReservationResponse> reservationsPage = reservationService.getUserReservations(authenticatedUserId, pageable);
+        PaginatedResponse<ReservationResponse> response = PaginatedResponse.from(reservationsPage);
         return ResponseEntity.ok(response);
     }
 }

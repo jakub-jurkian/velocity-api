@@ -2,6 +2,9 @@ package com.velocity.api.reservation.repository;
 
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,4 +31,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
 
     @Query("SELECT r.id FROM Reservation r WHERE r.status = :status AND r.endDate < :today")
     List<UUID> findPastDueConfirmedReservationsIds(@Param("status") ReservationStatus status, @Param("today") LocalDate today);
+
+    @EntityGraph(attributePaths = {"bikeInstance", "bikeInstance.bikeModel", "bikeInstance.id", "bikeInstance.city"})
+    Page<Reservation> findByUserId(UUID userId, Pageable pageable);
 }
