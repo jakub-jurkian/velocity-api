@@ -4,6 +4,7 @@ import com.velocity.api.bike.BikeInstance;
 import com.velocity.api.bike.BikeStatus;
 import com.velocity.api.bike.repository.BikeInstanceRepository;
 import com.velocity.api.bike.repository.projection.AvailableModelProjection;
+import com.velocity.api.common.City;
 import com.velocity.api.pricing.RentalCostCalculator;
 import com.velocity.api.bike.exception.BikeNotAvailableException;
 import com.velocity.api.bike.exception.InvalidBikeStateException;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -86,8 +88,11 @@ public class ReservationService {
         );
     }
 
-    public List<AvailableModelResponse> getAvailableModels(LocalDate startDate, LocalDate endDate) {
-        List<AvailableModelProjection> availableProjections = bikeInstanceRepository.findAvailableModels(startDate, endDate);
+    public List<AvailableModelResponse> getAvailableModels(LocalDate startDate, LocalDate endDate, City city, City userCity) throws AccessDeniedException {
+        if (!userCity.equals(city)) {
+            throw new AccessDeniedException("It's not the authenticated user's city.");
+        }
+        List<AvailableModelProjection> availableProjections = bikeInstanceRepository.findAvailableModels(startDate, endDate, city.toString());
         int days = Math.toIntExact(ChronoUnit.DAYS.between(startDate, endDate));
         BigDecimal totalCost = rentalCostCalculator.calculate(days);
         return availableProjections.stream().map(projection ->
