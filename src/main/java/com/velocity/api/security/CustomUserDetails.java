@@ -1,5 +1,6 @@
 package com.velocity.api.security;
 
+import com.velocity.api.common.City;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
@@ -12,6 +13,7 @@ public record CustomUserDetails(
         UUID id,
         String username,
         String password,
+        City city,
         Collection<? extends GrantedAuthority> authorities) implements UserDetails {
 
     @Override
@@ -21,6 +23,10 @@ public record CustomUserDetails(
 
     public UUID getId() {
         return this.id;
+    }
+
+    public City getCity() {
+        return this.city;
     }
 
     @Override

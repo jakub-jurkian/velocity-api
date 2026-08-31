@@ -1,5 +1,6 @@
 package com.velocity.api.reservation.controller;
 
+import com.velocity.api.common.City;
 import com.velocity.api.common.dto.PaginatedResponse;
 import com.velocity.api.reservation.dto.AvailableModelResponse;
 import com.velocity.api.reservation.dto.ReservationBookRequest;
@@ -40,8 +41,9 @@ public class ReservationController {
     }
 
     @GetMapping("/availability")
-    public ResponseEntity<List<AvailableModelResponse>> getAvailableModels(@RequestParam LocalDate startDate, @RequestParam LocalDate endDate) {
-        List<AvailableModelResponse> response = reservationService.getAvailableModels(startDate, endDate);
+    public ResponseEntity<List<AvailableModelResponse>> getAvailableModels(@RequestParam LocalDate startDate, @RequestParam LocalDate endDate, @RequestParam City city, @AuthenticationPrincipal CustomUserDetails userDetails) throws Exception {
+        City authenticatedUserCity = userDetails.getCity();
+        List<AvailableModelResponse> response = reservationService.getAvailableModels(startDate, endDate, city, authenticatedUserCity);
         return ResponseEntity.ok(response);
     }
 
