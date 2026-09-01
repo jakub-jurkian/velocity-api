@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -53,5 +54,12 @@ public class ReservationController {
         Page<ReservationResponse> reservationsPage = reservationService.getUserReservations(authenticatedUserId, pageable);
         PaginatedResponse<ReservationResponse> response = PaginatedResponse.from(reservationsPage);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/confirm")
+    public ResponseEntity<Void> confirmReservation(@PathVariable UUID id, @AuthenticationPrincipal CustomUserDetails userDetails) throws AccessDeniedException {
+        UUID authenticatedUserId = userDetails.getId();
+        reservationService.confirmReservation(id, authenticatedUserId);
+        return ResponseEntity.noContent().build();
     }
 }
