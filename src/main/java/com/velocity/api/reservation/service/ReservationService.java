@@ -20,11 +20,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -88,9 +88,9 @@ public class ReservationService {
         );
     }
 
-    public List<AvailableModelResponse> getAvailableModels(LocalDate startDate, LocalDate endDate, City city, City userCity) throws AccessDeniedException {
+    public List<AvailableModelResponse> getAvailableModels(LocalDate startDate, LocalDate endDate, City city, City userCity) throws AuthorizationDeniedException {
         if (!userCity.equals(city)) {
-            throw new AccessDeniedException("It's not the authenticated user's city.");
+            throw new AuthorizationDeniedException("It's not the authenticated user's city.");
         }
         List<AvailableModelProjection> availableProjections = bikeInstanceRepository.findAvailableModels(startDate, endDate, city.toString());
         int days = Math.toIntExact(ChronoUnit.DAYS.between(startDate, endDate));
@@ -127,5 +127,16 @@ public class ReservationService {
     public Page<ReservationResponse> getUserReservations(UUID id, Pageable page) {
         Page<Reservation> reservationsPage = reservationRepository.findByUserId(id, page);
         return reservationsPage.map(reservationMapper::toDto);
+    }
+
+    @Transactional
+    public void confirmReservation(UUID reservationId, UUID userId) throws AuthorizationDeniedException {
+        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+
+        if (!(reservation.getUser().getId().equals(userId))) {
+            throw new AuthorizationDeniedException("The User cannot access the reservation of other user");
+        }
+
+        reservation.transitionTo(ReservationStatus.CONFIRMED);
     }
 }
