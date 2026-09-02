@@ -3,8 +3,11 @@ package com.velocity.api.user.service;
 import com.velocity.api.common.City;
 import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.user.User;
+import com.velocity.api.user.UserRole;
 import com.velocity.api.user.dto.AdminUserResponse;
 import com.velocity.api.user.dto.AdminUserUpdateRequest;
+import com.velocity.api.user.dto.AdminUserUpdateRoleRequest;
+import com.velocity.api.user.exception.CannotDemoteSelfException;
 import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -65,5 +68,14 @@ public class AdminUserService {
         }
 
         user.updateProfileByAdmin(fullName, phone, city, email);
+    }
+
+    @Transactional
+    public void updateUserRole(UUID id, UUID authenticatedUserId, AdminUserUpdateRoleRequest request) {
+        if (authenticatedUserId.equals(id)) {
+            throw new CannotDemoteSelfException("Administrators cannot change their own roles.");
+        }
+        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found."));
+        user.changeRoleByAdmin(request.role());
     }
 }

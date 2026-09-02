@@ -80,6 +80,11 @@ public class User {
         this.email = email;
     }
 
+    public void changeRoleByAdmin(UserRole role) {
+        validateRole(role);
+        this.role = role;
+    }
+
     public void block() {
         if (this.status == UserStatus.DELETED) {
             throw new InvalidUserStateException("Cannot modify a deleted user.");
@@ -141,6 +146,12 @@ public class User {
     private void validateEmail(String email) {
         if (!EMAIL_PATTERN.matcher(email).matches()) {
             throw new IllegalArgumentException("Email must be properly formatted.");
+        }
+    }
+
+    private void validateRole(UserRole role) {
+        if (role == null) {
+            throw new IllegalArgumentException("Role is required");
         }
     }
 }
