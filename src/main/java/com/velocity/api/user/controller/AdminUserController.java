@@ -2,6 +2,7 @@ package com.velocity.api.user.controller;
 
 import com.velocity.api.common.dto.PaginatedResponse;
 import com.velocity.api.user.dto.AdminUserResponse;
+import com.velocity.api.user.dto.AdminUserUpdateRequest;
 import com.velocity.api.user.service.AdminUserService;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
@@ -42,6 +43,12 @@ public class AdminUserController {
     @PostMapping("/users/{id}/delete")
     public ResponseEntity<Void> softDeleteUser(@PathVariable("id") UUID id) {
         adminUserService.softDeleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/users/{id}")
+    public ResponseEntity<Void> updateUser(@PathVariable UUID id, @RequestBody AdminUserUpdateRequest request) {
+        adminUserService.updateUser(id, request);
         return ResponseEntity.noContent().build();
     }
 }
