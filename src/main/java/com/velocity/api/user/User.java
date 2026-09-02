@@ -12,12 +12,15 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Getter
 @Entity
 @Table(name = "users")
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // for JPA
 public class User {
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$");
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -64,6 +67,17 @@ public class User {
         this.fullName = fullName.trim();
         this.phone = phone;
         this.city = city;
+    }
+
+    public void updateProfileByAdmin(String fullName, String phone, City city, String email) {
+        validateFullName(fullName);
+        validatePhone(phone);
+        validateCity(city);
+        validateEmail(email);
+        this.fullName = fullName.trim();
+        this.phone = phone;
+        this.city = city;
+        this.email = email;
     }
 
     public void block() {
@@ -121,6 +135,12 @@ public class User {
     private void validateCity(City city) {
         if (city == null) {
             throw new IllegalArgumentException("City is required");
+        }
+    }
+
+    private void validateEmail(String email) {
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
+            throw new IllegalArgumentException("Email must be properly formatted.");
         }
     }
 }
