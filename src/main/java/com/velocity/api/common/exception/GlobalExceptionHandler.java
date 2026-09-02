@@ -3,6 +3,7 @@ package com.velocity.api.common.exception;
 import com.velocity.api.bike.exception.BikeNotAvailableException;
 import com.velocity.api.bike.exception.InvalidBikeStateException;
 import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
+import com.velocity.api.user.exception.CannotDemoteSelfException;
 import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.user.exception.InvalidUserStateException;
 import lombok.extern.slf4j.Slf4j;
@@ -240,6 +241,17 @@ public class GlobalExceptionHandler {
         );
         problem.setTitle("Wrong HTTP Method");
 
+        return problem;
+    }
+
+    @ExceptionHandler(CannotDemoteSelfException.class)
+    public ProblemDetail handleCannotDemoteSelfException(CannotDemoteSelfException ex) {
+        log.warn("Self-demotion attempt blocked: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problem.setTitle("Self-demotion attempt blocked");
         return problem;
     }
 
