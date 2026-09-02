@@ -1,8 +1,11 @@
 package com.velocity.api.user.service;
 
+import com.velocity.api.common.City;
 import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.user.User;
 import com.velocity.api.user.dto.AdminUserResponse;
+import com.velocity.api.user.dto.AdminUserUpdateRequest;
+import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -47,5 +50,20 @@ public class AdminUserService {
     public void softDeleteUser(UUID id) {
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found."));
         user.softDelete();
+    }
+
+    @Transactional
+    public void updateUser(UUID id, AdminUserUpdateRequest request) {
+        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found."));
+        String fullName = request.fullName().isPresent() ? request.fullName().get() : user.getFullName();
+        String phone = request.phone().isPresent() ? request.phone().get() : user.getPhone();
+        City city = request.city().isPresent() ? request.city().get() : user.getCity();
+        String email = request.email().isPresent() ? request.email().get() : user.getEmail();
+
+        if (!email.equalsIgnoreCase(user.getEmail()) && userRepository.findByEmail(email).isPresent()) {
+            throw new EmailAlreadyRegisteredException("The email address " + request.email() + " is already in use.");
+        }
+
+        user.updateProfileByAdmin(fullName, phone, city, email);
     }
 }
