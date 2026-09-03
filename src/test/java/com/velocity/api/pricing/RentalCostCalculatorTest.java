@@ -14,7 +14,7 @@ public class RentalCostCalculatorTest {
 
     @Test
     // Information about business logic behind the method
-    @DisplayName("Cost is exactly the flat rate multiplied by the number of rental days")
+    @DisplayName("Cost is exactly the flat rate multiplied by the number of rental days - test standard rate tier (3-7 days)")
     //MethodName_State_Expectation
     public void calculate_positiveDaysAndRate_returnsMultipliedTotal() {
         // 1. Arrange
@@ -48,5 +48,79 @@ public class RentalCostCalculatorTest {
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> calculator.calculate(rentalDays));
+    }
+
+    @Test
+    @DisplayName("Tier 1 Upper Boundary: 7 days applies no discount")
+    public void calculate_exactlySevenDays_returnsStandardTotal() {
+        // Arrange
+        RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("10.00"));
+        BigDecimal expectedCost = new BigDecimal("70.00");
+
+        // Act
+        BigDecimal actualCost = calculator.calculate(7);
+
+        // Assert
+        assertThat(actualCost).isEqualByComparingTo(expectedCost);
+    }
+
+    @Test
+    @DisplayName("Tier 2 Lower Boundary: 8 days applies 20% discount")
+    public void calculate_eightDays_appliesTwentyPercentDiscount() {
+        // Arrange
+        RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("10.00"));
+        // Base is 80, 20% off is 16. Total: 64.
+        BigDecimal expectedCost = new BigDecimal("64.00");
+
+        // Act
+        BigDecimal actualCost = calculator.calculate(8);
+
+        // Assert
+        assertThat(actualCost).isEqualByComparingTo(expectedCost);
+    }
+
+    @Test
+    @DisplayName("Tier 2 Upper Boundary: 14 days applies 20% discount")
+    public void calculate_fourteenDays_appliesTwentyPercentDiscount() {
+        // Arrange
+        RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("10.00"));
+        // Base is 140, 20% off is 28. Total: 112.
+        BigDecimal expectedCost = new BigDecimal("112.00");
+
+        // Act
+        BigDecimal actualCost = calculator.calculate(14);
+
+        // Assert
+        assertThat(actualCost).isEqualByComparingTo(expectedCost);
+    }
+
+    @Test
+    @DisplayName("Tier 3 Lower Boundary: 15 days applies 40% discount")
+    public void calculate_fifteenDays_appliesFortyPercentDiscount() {
+        // Arrange
+        RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("10.00"));
+        // Base is 150, 40% off is 60. Total: 90.
+        BigDecimal expectedCost = new BigDecimal("90.00");
+
+        // Act
+        BigDecimal actualCost = calculator.calculate(15);
+
+        // Assert
+        assertThat(actualCost).isEqualByComparingTo(expectedCost);
+    }
+
+    @Test
+    @DisplayName("Tier 3 Upper Boundary: 21 days applies 40% discount")
+    public void calculate_twentyOneDays_appliesFortyPercentDiscount() {
+        // Arrange
+        RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("10.00"));
+        // Base is 210, 40% off is 84. Total: 126.
+        BigDecimal expectedCost = new BigDecimal("126.00");
+
+        // Act
+        BigDecimal actualCost = calculator.calculate(21);
+
+        // Assert
+        assertThat(actualCost).isEqualByComparingTo(expectedCost);
     }
 }
