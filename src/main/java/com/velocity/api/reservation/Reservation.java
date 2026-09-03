@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Getter
@@ -69,6 +70,13 @@ public class Reservation {
     }
 
     private Reservation(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, BigDecimal totalCost) {
+        long days = ChronoUnit.DAYS.between(startDate, endDate);
+        if (days < 3 || days > 21) {
+            throw new IllegalArgumentException("Amount of days cannot be greater than 21 or smaller than 3.");
+        }
+        if (!endDate.isAfter(startDate)) {
+            throw new IllegalArgumentException("End date must be greater than Start date.");
+        }
         this.user = user;
         this.bikeInstance = bikeInstance;
         this.startDate = startDate;
