@@ -6,6 +6,7 @@ import com.velocity.api.reservation.dto.AvailableModelResponse;
 import com.velocity.api.reservation.dto.ReservationBookRequest;
 import com.velocity.api.reservation.dto.ReservationBookResponse;
 import com.velocity.api.reservation.dto.ReservationResponse;
+import com.velocity.api.reservation.exception.LateCancelException;
 import com.velocity.api.reservation.service.ReservationService;
 import com.velocity.api.security.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -60,6 +61,13 @@ public class ReservationController {
     public ResponseEntity<Void> confirmReservation(@PathVariable UUID id, @AuthenticationPrincipal CustomUserDetails userDetails) throws AccessDeniedException {
         UUID authenticatedUserId = userDetails.getId();
         reservationService.confirmReservation(id, authenticatedUserId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<Void> cancelReservation(@PathVariable UUID id, @AuthenticationPrincipal CustomUserDetails userDetails) throws LateCancelException {
+        UUID authenticatedUserId = userDetails.getId();
+        reservationService.cancelReservation(id, authenticatedUserId);
         return ResponseEntity.noContent().build();
     }
 }

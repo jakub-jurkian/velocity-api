@@ -6,6 +6,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ReservationTest {
@@ -21,6 +23,7 @@ public class ReservationTest {
     public void transitionTo_validStates_updatesStatus(ReservationStatus from, ReservationStatus to) {
         Reservation reservation = new Reservation();
         ReflectionTestUtils.setField(reservation, "status", from);
+        ReflectionTestUtils.setField(reservation, "startDate", LocalDate.now().plusDays(1));
 
         reservation.transitionTo(to);
 
