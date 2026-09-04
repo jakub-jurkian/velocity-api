@@ -36,7 +36,7 @@ springdoc:
     path: /api/api-docs
 
 pricing:
-  daily-rate: 50.00
+  daily-rate: 25.00
 
 server:
   port: 8080
