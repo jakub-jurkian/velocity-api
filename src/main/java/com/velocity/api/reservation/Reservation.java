@@ -2,6 +2,7 @@ package com.velocity.api.reservation;
 
 import com.velocity.api.bike.BikeInstance;
 import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
+import com.velocity.api.reservation.exception.LateCancelException;
 import com.velocity.api.user.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -49,7 +50,7 @@ public class Reservation {
         this.createdAt = Instant.now();
     }
 
-    public void transitionTo(ReservationStatus newStatus) {
+    public void transitionTo(ReservationStatus newStatus) throws LateCancelException {
         if (this.status == newStatus) return;
 
         boolean isValid = switch (this.status) {
@@ -60,6 +61,10 @@ public class Reservation {
 
         if (!isValid) {
             throw new InvalidStatusTransitionException(this.status, newStatus);
+        }
+
+        if (newStatus.equals(ReservationStatus.CANCELLED) && LocalDate.now().isAfter(this.startDate)) {
+            throw new LateCancelException("The reservation cannot be cancelled after end date.");
         }
 
         this.status = newStatus;
