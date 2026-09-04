@@ -12,6 +12,7 @@ import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
 import com.velocity.api.reservation.dto.*;
+import com.velocity.api.reservation.exception.LateCancelException;
 import com.velocity.api.reservation.mapper.ReservationMapper;
 import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.user.User;
@@ -138,5 +139,16 @@ public class ReservationService {
         }
 
         reservation.transitionTo(ReservationStatus.CONFIRMED);
+    }
+
+    @Transactional
+    public void cancelReservation(UUID reservationId, UUID userId) throws LateCancelException {
+        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+
+        if (!(reservation.getUser().getId().equals(userId))) {
+            throw new AuthorizationDeniedException("The User cannot access the reservation of other user");
+        }
+
+        reservation.transitionTo(ReservationStatus.CANCELLED);
     }
 }

@@ -3,6 +3,7 @@ package com.velocity.api.common.exception;
 import com.velocity.api.bike.exception.BikeNotAvailableException;
 import com.velocity.api.bike.exception.InvalidBikeStateException;
 import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
+import com.velocity.api.reservation.exception.LateCancelException;
 import com.velocity.api.user.exception.CannotDemoteSelfException;
 import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.user.exception.InvalidUserStateException;
@@ -252,6 +253,17 @@ public class GlobalExceptionHandler {
                 ex.getMessage()
         );
         problem.setTitle("Self-demotion attempt blocked");
+        return problem;
+    }
+
+    @ExceptionHandler(LateCancelException.class)
+    public ProblemDetail handleLateCancellationException(LateCancelException ex) {
+        log.warn("Late cancellation attempt blocked: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage()
+        );
+        problem.setTitle("Late Cancellation Policy Violation");
         return problem;
     }
 
