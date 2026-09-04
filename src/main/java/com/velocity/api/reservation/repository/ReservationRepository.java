@@ -1,5 +1,6 @@
 package com.velocity.api.reservation.repository;
 
+import com.velocity.api.analytics.dto.DashboardMetricsResponse;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
 import org.springframework.data.domain.Page;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -34,4 +36,18 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
 
     @EntityGraph(attributePaths = {"bikeInstance", "bikeInstance.bikeModel", "bikeInstance.id", "bikeInstance.city"})
     Page<Reservation> findByUserId(UUID userId, Pageable pageable);
+
+    @Query("SELECT SUM(r.totalCost) FROM Reservation r WHERE NOT r.status = 'CANCELLED'")
+    BigDecimal findTotalRevenue();
+
+    @Query("SELECT COUNT(r.id) FROM Reservation r WHERE r.status = 'CONFIRMED'")
+    long countActiveRentals();
+
+    @Query("""
+            SELECT YEAR(r.startDate) AS year, MONTH(r.startDate) AS month, SUM(r.totalCost) AS revenue FROM Reservation r WHERE NOT r.status = 'CANCELLED' GROUP BY YEAR(r.startDate), MONTH(r.startDate)
+            """)
+    List<DashboardMetricsResponse.RevenueByMonth> findRevenueTrend();
+
+    @Query("SELECT r.bikeInstance.bikeModel.name AS modelName, COUNT(r.id) AS count FROM Reservation r WHERE NOT r.status = 'CANCELLED' GROUP BY r.bikeInstance.bikeModel.name")
+    List<DashboardMetricsResponse.FleetPopularity> findFleetPopularity();
 }
