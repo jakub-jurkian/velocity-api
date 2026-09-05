@@ -2,6 +2,8 @@ package com.velocity.api.user.service;
 
 import com.velocity.api.common.City;
 import com.velocity.api.common.exception.ResourceNotFoundException;
+import com.velocity.api.security.JwtService;
+import com.velocity.api.security.repository.TokenBlacklistRepository;
 import com.velocity.api.user.User;
 import com.velocity.api.user.UserRole;
 import com.velocity.api.user.dto.AdminUserResponse;
@@ -17,6 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.UUID;
 
 @Service
@@ -24,6 +27,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminUserService {
     private final UserRepository userRepository;
+    private final TokenBlacklistRepository tokenBlacklistRepository;
+    private final JwtService jwtService;
 
     public Page<AdminUserResponse> listUsers(Pageable pageable) {
         return userRepository.findAll(pageable)
@@ -38,9 +43,14 @@ public class AdminUserService {
     }
 
     @Transactional
-    public void blockUser(UUID id) {
+    public void blockUser(UUID id, UUID authenticatedAdminId) {
+        if(authenticatedAdminId.equals(id)) {
+            throw new CannotDemoteSelfException("Administrators cannot block their own accounts.");
+        }
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found."));
         user.block();
+        Duration tokenExpirationDuration = jwtService.getJwtExpirationDuration();
+        tokenBlacklistRepository.blacklistUser(String.valueOf(id), tokenExpirationDuration);
     }
 
     @Transactional
