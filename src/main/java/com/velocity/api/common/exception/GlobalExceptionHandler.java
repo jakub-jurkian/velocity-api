@@ -14,6 +14,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -264,6 +265,17 @@ public class GlobalExceptionHandler {
                 ex.getMessage()
         );
         problem.setTitle("Late Cancellation Policy Violation");
+        return problem;
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ProblemDetail handleLockedException(LockedException ex) {
+        log.warn("The account is blocked: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED,
+                "Your account has been blocked. Please contact support."
+        );
+        problem.setTitle("Account has been blocked");
         return problem;
     }
 
