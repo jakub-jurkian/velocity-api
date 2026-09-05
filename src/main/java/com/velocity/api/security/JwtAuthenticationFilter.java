@@ -42,6 +42,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 filterChain.doFilter(request, response);
                 return;
             }
+
+            String userId = jwtService.extractClaim(rawToken, "userId", String.class);
+            if (userId != null && tokenBlacklistRepository.isUserBlacklisted(userId)) {
+                log.warn("The user is blacklisted.");
+                filterChain.doFilter(request, response);
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Account has been blocked");
+                return;
+            }
+
             String username = jwtService.extractUsername(rawToken);
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);

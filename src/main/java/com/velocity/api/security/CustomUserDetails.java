@@ -1,6 +1,7 @@
 package com.velocity.api.security;
 
 import com.velocity.api.common.City;
+import com.velocity.api.user.UserStatus;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
@@ -14,6 +15,7 @@ public record CustomUserDetails(
         String username,
         String password,
         City city,
+        UserStatus status,
         Collection<? extends GrantedAuthority> authorities) implements UserDetails {
 
     @Override
@@ -39,4 +41,8 @@ public record CustomUserDetails(
         return username;
     }
 
+    @Override
+    public boolean isAccountNonLocked() {
+        return this.status != UserStatus.BLOCKED;
+    }
 }

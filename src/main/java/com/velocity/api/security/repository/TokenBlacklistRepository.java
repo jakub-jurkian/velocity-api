@@ -20,4 +20,14 @@ public class TokenBlacklistRepository {
     public boolean isBlacklisted(String token) {
         return Boolean.TRUE.equals(stringRedisTemplate.hasKey(KEY_PREFIX + token));
     }
+
+    public void blacklistUser(String userId, Duration ttl) {
+        if (ttl.isNegative() || ttl.isZero()) return;
+        stringRedisTemplate.opsForValue().set(KEY_PREFIX + "user:" + userId, "blacklisted", ttl);
+    }
+
+    public boolean isUserBlacklisted(String userId) {
+        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(KEY_PREFIX + "user:" + userId));
+
+    }
 }

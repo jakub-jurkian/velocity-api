@@ -1,6 +1,7 @@
 package com.velocity.api.security;
 
 import com.velocity.api.common.City;
+import com.velocity.api.user.UserStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -19,6 +20,7 @@ public class SecurityTestHelper {
                 "test@test.com",
                 "password-not-needed",
                 City.GDANSK,
+                UserStatus.ACTIVE,
                 List.of(new SimpleGrantedAuthority("ROLE_" + role))
         );
 

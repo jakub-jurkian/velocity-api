@@ -33,8 +33,9 @@ public class AdminUserController {
     }
 
     @PostMapping("/users/{id}/block")
-    public ResponseEntity<Void> blockUser(@PathVariable("id") UUID id) {
-        adminUserService.blockUser(id);
+    public ResponseEntity<Void> blockUser(@PathVariable("id") UUID id, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        UUID authenticatedAdminId = userDetails.getId();
+        adminUserService.blockUser(id, authenticatedAdminId);
         return ResponseEntity.noContent().build();
     }
 
