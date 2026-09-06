@@ -90,7 +90,7 @@ public class ReservationConcurrencyIntegrationTest extends BaseIntegrationTest {
     @Test
     public void createReservation_ConcurrentIdenticalRequests_ReturnsCreatedAndConflict() throws ExecutionException, InterruptedException {
         // prep the req
-        ReservationBookRequest req = new ReservationBookRequest(bikeInstanceId, LocalDate.parse("2026-09-05"), LocalDate.parse("2026-09-10"));
+        ReservationBookRequest req = new ReservationBookRequest(bikeInstanceId, LocalDate.now().plusDays(2), LocalDate.now().plusDays(6));
 
         // init concurrency tools
         CountDownLatch latch = new CountDownLatch(1);
