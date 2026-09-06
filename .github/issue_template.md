@@ -1,6 +1,3 @@
-### Type
-<!-- Feature / Bug / Chore / Tech Debt / Polish-batch -->
-
 ### Context
 [Why this is needed. For a single change: the problem and goal. For a batch: why these are grouped, why now, what breaks if deferred.]
 
