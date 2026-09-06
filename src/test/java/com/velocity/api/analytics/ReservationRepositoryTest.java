@@ -9,6 +9,8 @@ import com.velocity.api.common.City;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
 import com.velocity.api.reservation.repository.ReservationRepository;
+import com.velocity.api.reservation.repository.projection.FleetPopularityProjection;
+import com.velocity.api.reservation.repository.projection.RevenueByMonthProjection;
 import com.velocity.api.user.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,10 +97,10 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
 
     @Test
     public void findRevenueTrend_WithValidData_ReturnsGroupedResults() {
-        List<DashboardMetricsResponse.RevenueByMonth> result = reservationRepository.findRevenueTrend();
+        List<RevenueByMonthProjection> result = reservationRepository.findRevenueTrend();
 
         assertThat(result).hasSize(1);
-        DashboardMetricsResponse.RevenueByMonth firstMonth = result.getFirst();
+        RevenueByMonthProjection firstMonth = result.getFirst();
         assertThat(firstMonth.getRevenue()).isEqualByComparingTo(BigDecimal.valueOf(250));
     }
 
@@ -109,13 +111,13 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
     }
 
     @Test
-    public void findTotalRevenue_WhenTableIsEmpty_ReturnsNull() {
+    public void findTotalRevenue_WhenTableIsEmpty_ReturnsZero() {
         entityManager.getEntityManager().createQuery("DELETE FROM Reservation").executeUpdate();
         entityManager.clear();
 
         BigDecimal result = reservationRepository.findTotalRevenue();
 
-        assertThat(result).isNull();
+        assertThat(result).isZero();
     }
 
     @Test
@@ -126,10 +128,10 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
 
     @Test
     public void findFleetPopularity_WithValidData_ReturnsMappedProjections() {
-        List<DashboardMetricsResponse.FleetPopularity> result = reservationRepository.findFleetPopularity();
+        List<FleetPopularityProjection> result = reservationRepository.findFleetPopularity();
 
         assertThat(result).hasSize(1);
-        DashboardMetricsResponse.FleetPopularity popularity = result.getFirst();
+        FleetPopularityProjection popularity = result.getFirst();
         assertThat(popularity.getModelName()).isEqualTo("Urban Cruiser");
         assertThat(popularity.getCount()).isEqualTo(2L);
     }

@@ -6,21 +6,13 @@ import java.util.List;
 public record DashboardMetricsResponse(
         BigDecimal totalRevenue,
         long activeRentals,
-        long occupancyRate,
-        List<RevenueByMonth> revenueTrend,
+        Double occupancyRate,
+        List<MonthlyRevenue> revenueTrend,
         List<FleetPopularity> popularityStats
 ) {
-    public interface RevenueByMonth {
-        int getYear();
-
-        int getMonth();
-
-        BigDecimal getRevenue();
+    public record MonthlyRevenue(int year, int month, BigDecimal revenue) {
     }
 
-    public interface FleetPopularity {
-        String getModelName();
-
-        long getCount();
+    public record FleetPopularity(String modelName, long count) {
     }
 }

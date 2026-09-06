@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface BikeInstanceRepository extends JpaRepository<BikeInstance, UUID> {
+    long countByStatus(BikeStatus status);
+
     long countByStatusAndCity(BikeStatus status, City city);
 
     @Query(nativeQuery = true, value = """
