@@ -15,8 +15,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
-@Slf4j
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class ReservationLifecycleScheduler {
     private final ReservationRepository reservationRepository;

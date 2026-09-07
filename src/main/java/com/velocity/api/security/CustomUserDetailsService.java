@@ -21,6 +21,6 @@ public class CustomUserDetailsService implements UserDetailsService {
     public @NonNull UserDetails loadUserByUsername(@NonNull String username) {
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User does not exists."));
-        return new CustomUserDetails(user.getId(), user.getEmail(), user.getPasswordHash(), user.getCity(), user.getStatus(), List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
+        return new CustomUserDetails(user.getId(), user.getEmail(), user.getPasswordHash(), user.getCity(), user.getStatus(), user.getRole(), List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
     }
 }

@@ -3,7 +3,7 @@ package com.velocity.api.user.service;
 import com.velocity.api.common.City;
 import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.user.User;
-import com.velocity.api.user.dto.UserProfileUpdateRequest;
+import com.velocity.api.auth.dto.UserProfileUpdateRequest;
 import com.velocity.api.user.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;

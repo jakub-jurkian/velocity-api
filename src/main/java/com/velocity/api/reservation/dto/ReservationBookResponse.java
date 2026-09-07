@@ -1,5 +1,6 @@
 package com.velocity.api.reservation.dto;
 
+import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
 
 import java.math.BigDecimal;
@@ -16,4 +17,15 @@ public record ReservationBookResponse(
         Instant createdAt,
         BikeSummary bike
 ) {
+    public static ReservationBookResponse from(Reservation reservation, BikeSummary bikeSummary) {
+        return new ReservationBookResponse(
+                reservation.getId(),
+                reservation.getStartDate(),
+                reservation.getEndDate(),
+                reservation.getTotalCost(),
+                reservation.getStatus(),
+                reservation.getCreatedAt(),
+                bikeSummary
+        );
+    }
 }

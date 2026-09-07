@@ -1,8 +1,11 @@
 package com.velocity.api.auth.service;
 
 import com.velocity.api.common.City;
+import com.velocity.api.security.CustomUserDetails;
 import com.velocity.api.security.JwtService;
 import com.velocity.api.security.repository.TokenBlacklistRepository;
+import com.velocity.api.user.UserRole;
+import com.velocity.api.user.UserStatus;
 import com.velocity.api.user.User;
 import com.velocity.api.auth.dto.UserLoginRequest;
 import com.velocity.api.auth.dto.UserLoginResponse;
@@ -17,12 +20,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
+import java.time.Clock;
 import java.time.Instant;
-import java.util.Optional;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -40,6 +43,8 @@ public class AuthServiceTest {
     private JwtService jwtService;
     @Mock
     private TokenBlacklistRepository tokenBlacklistRepository;
+    @Mock
+    private Clock clock;
 
     @InjectMocks
     private AuthService authService;
@@ -52,11 +57,15 @@ public class AuthServiceTest {
     @Test
     public void login_validData_orchestratesDependenciesCorrectly() {
         // Arrange
-        // Create a dummy Spring Security UserDetails (like in JwtServiceTest)
-        UserDetails dummyUserDetails = org.springframework.security.core.userdetails.User.builder()
-                .username("test@test.com")
-                .password("hash")
-                .build();
+        CustomUserDetails dummyUserDetails = new CustomUserDetails(
+                User.registerClient("test@test.com", "hash", "Test", "+48000400000", City.GDANSK).getId(),
+                "test@test.com",
+                "hash",
+                City.GDANSK,
+                UserStatus.ACTIVE,
+                UserRole.CLIENT,
+                List.of()
+        );
         // Create a mock Authentication object
         Authentication mockAuth = mock(Authentication.class);
 
@@ -65,7 +74,6 @@ public class AuthServiceTest {
 
         // Tell the AuthenticationManager to return your mockAuth!
         when(authenticationManager.authenticate(any())).thenReturn(mockAuth);
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(User.registerClient("test@test.com", "hash", "Test", "+48000400000", City.GDANSK)));
         when(jwtService.generateToken(any(), any())).thenReturn("fake-jwt-string");
         UserLoginRequest request = new UserLoginRequest("test@test.com", "hash");
         // Act
@@ -91,7 +99,9 @@ public class AuthServiceTest {
     @Test
     public void logout_validToken_savesToBlacklist() {
         // Arrange
-        when(jwtService.extractExpiration(anyString())).thenReturn(Instant.now().plusSeconds(3600));
+        Instant now = Instant.parse("2026-01-01T12:00:00Z");
+        when(clock.instant()).thenReturn(now);
+        when(jwtService.extractExpiration(anyString())).thenReturn(now.plusSeconds(3600));
         authService.logout("fake-token-123");
         ArgumentCaptor<Duration> captor = ArgumentCaptor.forClass(Duration.class);
         verify(tokenBlacklistRepository).blacklist(eq("fake-token-123"), captor.capture());
@@ -102,7 +112,9 @@ public class AuthServiceTest {
     @Test
     public void logout_expiredToken_doesNotCallRepository() {
         // Arrange
-        when(jwtService.extractExpiration(anyString())).thenReturn(Instant.now().minusMillis(3600));
+        Instant now = Instant.parse("2026-01-01T12:00:00Z");
+        when(clock.instant()).thenReturn(now);
+        when(jwtService.extractExpiration(anyString())).thenReturn(now.minusSeconds(1));
         // Act
         authService.logout("fake-token-123");
         // Assert
