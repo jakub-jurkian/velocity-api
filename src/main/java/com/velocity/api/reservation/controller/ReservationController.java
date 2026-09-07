@@ -43,7 +43,7 @@ public class ReservationController {
     }
 
     @GetMapping("/availability")
-    public ResponseEntity<List<AvailableModelResponse>> getAvailableModels(@RequestParam LocalDate startDate, @RequestParam LocalDate endDate, @RequestParam City city, @AuthenticationPrincipal CustomUserDetails userDetails) throws Exception {
+    public ResponseEntity<List<AvailableModelResponse>> getAvailableModels(@RequestParam LocalDate startDate, @RequestParam LocalDate endDate, @RequestParam City city, @AuthenticationPrincipal CustomUserDetails userDetails) {
         City authenticatedUserCity = userDetails.getCity();
         List<AvailableModelResponse> response = reservationService.getAvailableModels(startDate, endDate, city, authenticatedUserCity);
         return ResponseEntity.ok(response);
@@ -58,14 +58,14 @@ public class ReservationController {
     }
 
     @PostMapping("/{id}/confirm")
-    public ResponseEntity<Void> confirmReservation(@PathVariable UUID id, @AuthenticationPrincipal CustomUserDetails userDetails) throws AccessDeniedException {
+    public ResponseEntity<Void> confirmReservation(@PathVariable UUID id, @AuthenticationPrincipal CustomUserDetails userDetails) {
         UUID authenticatedUserId = userDetails.getId();
         reservationService.confirmReservation(id, authenticatedUserId);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<Void> cancelReservation(@PathVariable UUID id, @AuthenticationPrincipal CustomUserDetails userDetails) throws LateCancelException {
+    public ResponseEntity<Void> cancelReservation(@PathVariable UUID id, @AuthenticationPrincipal CustomUserDetails userDetails) {
         UUID authenticatedUserId = userDetails.getId();
         reservationService.cancelReservation(id, authenticatedUserId);
         return ResponseEntity.noContent().build();

@@ -18,10 +18,23 @@ public interface BikeInstanceRepository extends JpaRepository<BikeInstance, UUID
     long countByStatusAndCity(BikeStatus status, City city);
 
     @Query(nativeQuery = true, value = """
-                 SELECT DISTINCT ON (m.id) i.id AS bookableInstanceId, m.name AS modelName, m.description AS modelDescription, m.speed AS modelSpeed, m.range AS modelRange, m.capacity AS modelCapacity, m.category AS modelCategory FROM bike_instances i JOIN bike_models m ON i.bike_model_id = m.id WHERE i.status = 'ACTIVE' AND i.city = :city AND NOT EXISTS (SELECT 1 FROM reservations r WHERE r.bike_instance_id = i.id
-                 AND r.status IN ('PENDING', 'CONFIRMED')                                                                                                                                                                                                                                                                                                   \s
-                 AND daterange(CAST(:startDate AS date), CAST(:endDate AS date), '[)') && daterange(r.start_date, r.end_date, '[)')
-                 ) ORDER BY m.id, i.id;
-            \s""")
+            SELECT DISTINCT ON (m.id)
+            i.id AS bookableInstanceId,
+            m.name AS modelName, m.description AS modelDescription,
+            m.speed AS modelSpeed, m.range AS modelRange,
+            m.capacity AS modelCapacity, m.category AS modelCategory
+            FROM bike_instances i
+            JOIN bike_models m ON i.bike_model_id = m.id
+            WHERE i.status = 'ACTIVE'
+            AND i.city = :city
+            AND NOT EXISTS (
+                SELECT 1 FROM reservations r
+                WHERE r.bike_instance_id = i.id
+                AND r.status IN ('PENDING', 'CONFIRMED')                                                                                                                                                                                                                                                                                                   \s
+                AND daterange(CAST(:startDate AS date), CAST(:endDate AS date), '[)')
+                && daterange(r.start_date, r.end_date, '[)')
+            )
+            ORDER BY m.id, i.id;
+            """)
     List<AvailableModelProjection> findAvailableModels(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("city") String city);
 }
