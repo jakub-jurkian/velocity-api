@@ -1,11 +1,11 @@
 package com.velocity.api.analytics;
 
 import com.velocity.api.BaseIntegrationTest;
-import com.velocity.api.analytics.dto.DashboardMetricsResponse;
 import com.velocity.api.bike.BikeCategory;
 import com.velocity.api.bike.BikeInstance;
 import com.velocity.api.bike.BikeModel;
 import com.velocity.api.common.City;
+import com.velocity.api.config.ClockConfig;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
 import com.velocity.api.reservation.repository.ReservationRepository;
@@ -18,14 +18,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
+import org.springframework.context.annotation.Import;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@Import(ClockConfig.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class ReservationRepositoryTest extends BaseIntegrationTest {
     @Autowired
@@ -33,6 +36,9 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
 
     @Autowired
     private TestEntityManager entityManager;
+
+    @Autowired
+    private Clock clock;
 
     @BeforeEach
     public void setUp() {
@@ -65,7 +71,7 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
                 LocalDate.of(2026, 9, 6),
                 new BigDecimal("125.00")
         );
-        res1.transitionTo(ReservationStatus.CONFIRMED);
+        res1.transitionTo(ReservationStatus.CONFIRMED, LocalDate.now(clock));
         entityManager.persist(res1);
 
 
@@ -77,7 +83,7 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
                 LocalDate.of(2026, 9, 20),
                 new BigDecimal("125.00")
         );
-        res2.transitionTo(ReservationStatus.CONFIRMED);
+        res2.transitionTo(ReservationStatus.CONFIRMED, LocalDate.now(clock));
         entityManager.persist(res2);
 
         // res3: Month 10 (October 2026) -> Expected to be ignored entirely
@@ -88,7 +94,7 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
                 LocalDate.of(2026, 10, 6),
                 new BigDecimal("125.00")
         );
-        res3.transitionTo(ReservationStatus.CANCELLED);
+        res3.transitionTo(ReservationStatus.CANCELLED, LocalDate.now(clock));
         entityManager.persist(res3);
 
         entityManager.flush(); // Fire Inserts to PostgreSQL

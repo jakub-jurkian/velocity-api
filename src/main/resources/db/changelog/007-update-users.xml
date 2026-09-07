@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="007-update-users-auditing" author="velocity-engineer">
+
+        <!-- auditing and versioning columns -->
+        <addColumn tableName="users">
+            <column name="last_modified" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="version" type="BIGINT" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <!-- Backfill existing seed rows so last_modified isn't left null -->
+        <update tableName="users">
+            <column name="last_modified" valueComputed="joined_date"/>
+            <where>last_modified IS NULL</where>
+        </update>
+
+    </changeSet>
+</databaseChangeLog>

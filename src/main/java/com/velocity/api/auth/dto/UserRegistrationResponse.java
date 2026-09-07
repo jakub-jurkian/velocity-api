@@ -1,6 +1,7 @@
 package com.velocity.api.auth.dto;
 
 import com.velocity.api.common.City;
+import com.velocity.api.user.User;
 import com.velocity.api.user.UserRole;
 
 import java.util.UUID;
@@ -13,4 +14,15 @@ public record UserRegistrationResponse(
         String phone,
         City city,
         UserRole role
-) {}
+) {
+    public static UserRegistrationResponse from(User user) {
+        return new UserRegistrationResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFullName(),
+                user.getPhone(),
+                user.getCity(),
+                user.getRole()
+        );
+    }
+}

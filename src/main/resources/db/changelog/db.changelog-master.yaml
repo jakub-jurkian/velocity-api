@@ -11,3 +11,5 @@ databaseChangeLog:
       file: db/changelog/005-add-reservation-exclusion-constraint.xml
   - include:
       file: db/changelog/dev/006-dev-seed.xml
+  - include:
+      file: db/changelog/007-update-users.xml

@@ -15,10 +15,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
-@Getter
 @Entity
 @Table(name = "reservations")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class Reservation {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -50,7 +50,7 @@ public class Reservation {
         this.createdAt = Instant.now();
     }
 
-    public void transitionTo(ReservationStatus newStatus) throws LateCancelException {
+    public void transitionTo(ReservationStatus newStatus, LocalDate currentDate) throws LateCancelException {
         if (this.status == newStatus) return;
 
         boolean isValid = switch (this.status) {
@@ -63,7 +63,7 @@ public class Reservation {
             throw new InvalidStatusTransitionException(this.status, newStatus);
         }
 
-        if (newStatus.equals(ReservationStatus.CANCELLED) && LocalDate.now().isAfter(this.startDate)) {
+        if (newStatus.equals(ReservationStatus.CANCELLED) && !currentDate.isBefore(this.startDate)) {
             throw new LateCancelException("The reservation cannot be cancelled after end date.");
         }
 

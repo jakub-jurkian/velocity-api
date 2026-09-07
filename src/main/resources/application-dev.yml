@@ -1,0 +1,19 @@
+spring:
+  config:
+    import: optional:file:.env
+  datasource:
+    url: jdbc:postgresql://localhost:5432/velocity
+    username: admin
+    password: ${POSTGRES_PASSWORD:password}
+  liquibase:
+    contexts: dev
+  data:
+    redis:
+      host: localhost
+      port: 6379
+security:
+  jwt:
+    secret-key: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    expiration-ms: 86400000 # 24h in ms
+cors:
+  allowed-origins: http://localhost:5173

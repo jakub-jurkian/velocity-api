@@ -24,15 +24,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Global exception handler that intercepts exceptions thrown by the application
  * and maps them to standardized RFC 7807 ProblemDetail JSON responses.
  */
-@Slf4j
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     /**
@@ -52,10 +54,11 @@ public class GlobalExceptionHandler {
         problem.setTitle("Bad Request");
         problem.setType(URI.create("about:blank"));
 
-        Map<String, String> errors = new HashMap<>();
+        Map<String, List<String>> errors = new HashMap<>();
 
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
-            errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+            errors.computeIfAbsent(fieldError.getField(), key -> new ArrayList<>())
+                    .add(fieldError.getDefaultMessage());
         }
 
         problem.setProperty("invalidFields", errors);
@@ -235,7 +238,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ProblemDetail handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException ex) {
-        log.error("Wrong HTTP Method: ", ex);
+        log.warn("Wrong HTTP Method requested: {}", ex.getMethod());
 
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.METHOD_NOT_ALLOWED,
