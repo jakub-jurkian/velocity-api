@@ -2,6 +2,7 @@ package com.velocity.api.config;
 
 import com.velocity.api.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,13 +25,14 @@ import java.util.List;
 
 /**
  * Global security configurations for the application.
- * Currently limited to cryptographic beans to avoid premature HTTP lockdown.
  */
 @Configuration
 @RequiredArgsConstructor
 @EnableWebSecurity
 @EnableMethodSecurity // This enables @PreAuthorize
 public class SecurityConfig {
+    @Value("${cors.allowed-origins}")
+    private List<String> allowedOrigins;
     private final JwtAuthenticationFilter jwtAuthFilter;
 
     // tells Spring to run this method once, take the resulting
@@ -66,7 +68,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration conf = new CorsConfiguration();
-        conf.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
+        conf.setAllowedOrigins(allowedOrigins);
         conf.setAllowedHeaders(List.of("*"));
         conf.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
         UrlBasedCorsConfigurationSource urls = new UrlBasedCorsConfigurationSource();
