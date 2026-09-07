@@ -92,7 +92,7 @@ public class ReservationSchedulerIntegrationTest extends BaseIntegrationTest {
         Reservation pastDueReservation = testDataFactory.createAndSaveReservation(
                 testUser, testBike, LocalDate.parse("2026-08-01"), LocalDate.parse("2026-08-08")
         );
-        pastDueReservation.transitionTo(ReservationStatus.CONFIRMED);
+        pastDueReservation.transitionTo(ReservationStatus.CONFIRMED, LocalDate.now());
         Reservation bookedPastDueReservation = reservationRepository.save(pastDueReservation);
         // Act
         scheduler.completePastDueConfirmedReservations();

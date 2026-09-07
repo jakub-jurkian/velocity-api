@@ -25,7 +25,7 @@ public class ReservationTest {
         ReflectionTestUtils.setField(reservation, "status", from);
         ReflectionTestUtils.setField(reservation, "startDate", LocalDate.now().plusDays(1));
 
-        reservation.transitionTo(to);
+        reservation.transitionTo(to, LocalDate.now());
 
         assertEquals(to, reservation.getStatus());
     }
@@ -46,7 +46,7 @@ public class ReservationTest {
         Reservation reservation = new Reservation();
         ReflectionTestUtils.setField(reservation, "status", from);
 
-        InvalidStatusTransitionException exception = assertThrows(InvalidStatusTransitionException.class, () -> reservation.transitionTo(to));
+        InvalidStatusTransitionException exception = assertThrows(InvalidStatusTransitionException.class, () -> reservation.transitionTo(to, LocalDate.now()));
 
         assertTrue(exception.getMessage().contains(from.name()),
                 "Message should contain FROM state: " + from);
@@ -66,7 +66,7 @@ public class ReservationTest {
         Reservation reservation = new Reservation();
         ReflectionTestUtils.setField(reservation, "status", from);
 
-        reservation.transitionTo(to);
+        reservation.transitionTo(to, LocalDate.now());
 
         assertEquals(to, reservation.getStatus());
     }
