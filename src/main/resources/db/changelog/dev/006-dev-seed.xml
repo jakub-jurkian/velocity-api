@@ -146,8 +146,8 @@
                 (gen_random_uuid(), '2026-09-22', '2026-09-25', 75.00,  'CONFIRMED', '2026-09-04 09:00:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'b2b2b2b2-2222-4222-8222-000000000007'), -- 3d * 25
                 (gen_random_uuid(), '2026-10-01', '2026-10-15', 280.00, 'CONFIRMED', '2026-09-04 10:00:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'c3c3c3c3-3333-4333-8333-000000000007'), -- 14d * 20
 
-                -- The 1 PENDING Reservation (Created today at 16:30, expires 17:00)
-                (gen_random_uuid(), '2026-09-06', '2026-09-09', 75.00,  'PENDING',   '2026-09-04 16:30:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000007')  -- 3d * 25
+                -- The 1 PENDING Reservation (keeps start in future so scheduler can cancel stale)
+                (gen_random_uuid(), '2026-09-09', '2026-09-12', 75.00,  'PENDING',   '2026-09-07 08:30:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000007')  -- 3d * 25
                 ON CONFLICT (id) DO NOTHING;
         </sql>
     </changeSet>
