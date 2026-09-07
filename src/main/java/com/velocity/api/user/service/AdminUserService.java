@@ -31,15 +31,7 @@ public class AdminUserService {
 
     @Transactional(readOnly = true)
     public Page<AdminUserResponse> listUsers(Pageable pageable) {
-        return userRepository.findAll(pageable)
-                .map(u -> new AdminUserResponse(
-                        u.getId(),
-                        u.getEmail(),
-                        u.getFullName(),
-                        u.getPhone(),
-                        u.getStatus(),
-                        u.getRole(),
-                        u.getJoinedDate()));
+        return userRepository.findAll(pageable).map(AdminUserResponse::from);
     }
 
     @Transactional
