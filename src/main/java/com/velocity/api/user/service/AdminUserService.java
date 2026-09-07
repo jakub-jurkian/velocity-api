@@ -5,7 +5,6 @@ import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.security.JwtService;
 import com.velocity.api.security.repository.TokenBlacklistRepository;
 import com.velocity.api.user.User;
-import com.velocity.api.user.UserRole;
 import com.velocity.api.user.dto.AdminUserResponse;
 import com.velocity.api.user.dto.AdminUserUpdateRequest;
 import com.velocity.api.user.dto.AdminUserUpdateRoleRequest;
@@ -30,6 +29,7 @@ public class AdminUserService {
     private final TokenBlacklistRepository tokenBlacklistRepository;
     private final JwtService jwtService;
 
+    @Transactional(readOnly = true)
     public Page<AdminUserResponse> listUsers(Pageable pageable) {
         return userRepository.findAll(pageable)
                 .map(u -> new AdminUserResponse(
@@ -44,7 +44,7 @@ public class AdminUserService {
 
     @Transactional
     public void blockUser(UUID id, UUID authenticatedAdminId) {
-        if(authenticatedAdminId.equals(id)) {
+        if (authenticatedAdminId.equals(id)) {
             throw new CannotDemoteSelfException("Administrators cannot block their own accounts.");
         }
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found."));
@@ -57,12 +57,6 @@ public class AdminUserService {
     public void unblockUser(UUID id) {
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found."));
         user.unblock();
-    }
-
-    @Transactional
-    public void softDeleteUser(UUID id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found."));
-        user.softDelete();
     }
 
     @Transactional

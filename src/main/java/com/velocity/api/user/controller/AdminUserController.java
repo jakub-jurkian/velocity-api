@@ -12,16 +12,14 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/v1/admin")
-@PreAuthorize("hasRole('ADMIN')")
+@RequiredArgsConstructor
 public class AdminUserController {
     private final AdminUserService adminUserService;
 
@@ -42,12 +40,6 @@ public class AdminUserController {
     @PostMapping("/users/{id}/unblock")
     public ResponseEntity<Void> unblockUser(@PathVariable("id") UUID id) {
         adminUserService.unblockUser(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/users/{id}/delete")
-    public ResponseEntity<Void> softDeleteUser(@PathVariable("id") UUID id) {
-        adminUserService.softDeleteUser(id);
         return ResponseEntity.noContent().build();
     }
 

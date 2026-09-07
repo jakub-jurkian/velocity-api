@@ -1,4 +1,4 @@
-package com.velocity.api.user.dto;
+package com.velocity.api.auth.dto;
 
 import com.velocity.api.common.City;
 import com.velocity.api.user.UserRole;

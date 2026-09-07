@@ -8,7 +8,7 @@ import com.velocity.api.security.repository.TokenBlacklistRepository;
 import com.velocity.api.user.User;
 import com.velocity.api.auth.dto.UserLoginRequest;
 import com.velocity.api.auth.dto.UserLoginResponse;
-import com.velocity.api.user.dto.UserProfileResponse;
+import com.velocity.api.auth.dto.UserProfileResponse;
 import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.Objects;
 
 @Service
 @Slf4j
@@ -43,23 +41,17 @@ public class AuthService {
     private long jwtExpiration;
 
     @Transactional
-    public UserRegistrationResponse registerUser(UserRegistrationRequest request) {
+    public UserRegistrationResponse register(UserRegistrationRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyRegisteredException("The email address " + request.email() + " is already in use.");
         }
+
         String encodedPassword = passwordEncoder.encode(request.password());
         User user = User.registerClient(request.email(), encodedPassword, request.fullName(), request.phone(), request.city());
 
         User registeredUser = userRepository.save(user);
         log.info("Successfully registered new user with ID: {} and email: {}", registeredUser.getId(), registeredUser.getEmail());
-        return new UserRegistrationResponse(
-                registeredUser.getId(),
-                registeredUser.getEmail(),
-                registeredUser.getFullName(),
-                registeredUser.getPhone(),
-                registeredUser.getCity(),
-                registeredUser.getRole()
-        );
+        return UserRegistrationResponse.from(registeredUser);
     }
 
     public UserLoginResponse login(UserLoginRequest request) {
@@ -71,7 +63,6 @@ public class AuthService {
         extraClaims.put("id", user.getId());
         extraClaims.put("role", user.getRole());
 
-        // UserDetails userDetails = customUserDetailsService.loadUserByUsername(request.email());
         // Cast the principal (the logged-in entity) to our Spring UserDetails object
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
@@ -87,10 +78,7 @@ public class AuthService {
         if (!ttl.isNegative() && !ttl.isZero()) tokenBlacklistRepository.blacklist(token, ttl);
     }
 
-    public UserProfileResponse getProfile() {
-        UserDetails userDetails = (UserDetails) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
-        assert userDetails != null;
-        String email = userDetails.getUsername();
+    public UserProfileResponse getProfile(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
         return new UserProfileResponse(user.getId(), user.getEmail(), user.getFullName(), user.getPhone(), user.getRole(), user.getCity(), user.getJoinedDate());

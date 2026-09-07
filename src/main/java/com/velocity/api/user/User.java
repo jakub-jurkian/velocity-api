@@ -1,22 +1,25 @@
 package com.velocity.api.user;
 
 import com.velocity.api.user.exception.InvalidUserStateException;
-import com.velocity.api.reservation.Reservation;
 import com.velocity.api.common.City;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-@Getter
+
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "users")
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // for JPA
 public class User {
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$");
@@ -42,18 +45,12 @@ public class User {
     @Enumerated(EnumType.STRING)
     private City city;
     @Column(nullable = false, updatable = false)
+    @CreatedDate
     private LocalDate joinedDate;
-    @OneToMany(mappedBy = "user")
-    final private List<Reservation> reservations = new ArrayList<>();
-
-    @PrePersist
-    protected void onCreate() {
-        this.joinedDate = LocalDate.now();
-    }
-
-    public void addReservation(Reservation reservation) {
-        reservations.add(reservation);
-    }
+    @LastModifiedDate
+    private Instant lastModified;
+    @Version
+    Long version;
 
     // The intent-revealing factory method
     public static User registerClient(String email, String passwordHash, String fullName, String phone, City city) {
@@ -110,6 +107,13 @@ public class User {
     }
 
     private User(String email, String passwordHash, String fullName, String phone, UserRole role, City city) {
+        validateEmail(email);
+        validatePasswordHash(passwordHash);
+        validateFullName(fullName);
+        validatePhone(phone);
+        validateRole(role);
+        validateCity(city);
+
         this.email = email;
         this.passwordHash = passwordHash;
         this.fullName = fullName;
@@ -146,6 +150,12 @@ public class User {
     private void validateEmail(String email) {
         if (!EMAIL_PATTERN.matcher(email).matches()) {
             throw new IllegalArgumentException("Email must be properly formatted.");
+        }
+    }
+
+    private void validatePasswordHash(String password) {
+        if (password == null) {
+            throw new IllegalArgumentException("Password is required");
         }
     }
 

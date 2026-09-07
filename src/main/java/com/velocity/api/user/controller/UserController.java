@@ -1,6 +1,6 @@
 package com.velocity.api.user.controller;
 
-import com.velocity.api.user.dto.UserProfileUpdateRequest;
+import com.velocity.api.auth.dto.UserProfileUpdateRequest;
 import com.velocity.api.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
