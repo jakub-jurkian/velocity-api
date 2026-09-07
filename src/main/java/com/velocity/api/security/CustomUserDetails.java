@@ -1,6 +1,7 @@
 package com.velocity.api.security;
 
 import com.velocity.api.common.City;
+import com.velocity.api.user.UserRole;
 import com.velocity.api.user.UserStatus;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -16,6 +17,7 @@ public record CustomUserDetails(
         String password,
         City city,
         UserStatus status,
+        UserRole role,
         Collection<? extends GrantedAuthority> authorities) implements UserDetails {
 
     @Override
@@ -25,6 +27,10 @@ public record CustomUserDetails(
 
     public UUID getId() {
         return this.id;
+    }
+
+    public UserRole getRole() {
+        return this.role;
     }
 
     public City getCity() {
