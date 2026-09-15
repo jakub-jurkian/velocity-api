@@ -4,7 +4,7 @@ import com.velocity.api.user.User;
 import com.velocity.api.user.UserRole;
 import com.velocity.api.user.UserStatus;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.UUID;
 
 public record AdminUserResponse(
@@ -14,7 +14,7 @@ public record AdminUserResponse(
         String phone,
         UserStatus status,
         UserRole role,
-        LocalDate joinedDate
+        Instant createdAt
 ) {
     public static AdminUserResponse from(User user) {
         return new AdminUserResponse(
@@ -24,6 +24,6 @@ public record AdminUserResponse(
                 user.getPhone(),
                 user.getStatus(),
                 user.getRole(),
-                user.getJoinedDate());
+                user.getCreatedAt());
     }
 }

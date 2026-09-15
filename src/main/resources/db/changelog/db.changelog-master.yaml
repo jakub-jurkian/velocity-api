@@ -13,3 +13,5 @@ databaseChangeLog:
       file: db/changelog/dev/006-dev-seed.xml
   - include:
       file: db/changelog/007-update-users.xml
+  - include:
+      file: db/changelog/008-update-users.xml
