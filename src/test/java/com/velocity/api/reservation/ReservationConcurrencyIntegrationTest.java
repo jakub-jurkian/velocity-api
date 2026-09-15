@@ -62,12 +62,12 @@ public class ReservationConcurrencyIntegrationTest extends BaseIntegrationTest {
     @BeforeEach
     public void setUp() {
         jdbcTemplate.update(
-                "INSERT INTO users (id, email, password_hash, full_name, phone, status, role, city, joined_date) " +
+                "INSERT INTO users (id, email, password_hash, full_name, phone, status, role, city, created_at) " +
                         "VALUES ('00000000-0000-0000-0000-000000000001', 'test@test.com', 'hash', 'Test', '123', 'ACTIVE', 'CLIENT', 'WARSAW', now())"
         );
         // force the hardcoded user into DB cause id is hardcoded in controller right now
         // User savedUser = userRepository.save(new User("test@test.com", "xf843fd23iom4r", "Test", "+48000000000", UserRole.CLIENT, City.GDANSK));
-        BikeModel savedBikeModel = bikeModelRepository.save(BikeModel.create("Test", "Test", 100, 100, 50, BikeCategory.AGILITY));
+        BikeModel savedBikeModel = bikeModelRepository.save(BikeModel.create("Test", "Test", 45, 100, 50, BikeCategory.AGILITY));
         BikeInstance savedBikeInstance = bikeInstanceRepository.save(BikeInstance.initialize(savedBikeModel, City.GDANSK));
         bikeInstanceId = savedBikeInstance.getId();
 

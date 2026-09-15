@@ -1,6 +1,6 @@
 ﻿# VeloCity Fleet API — Project Context
 
-Last updated: 2026-09-01
+Last updated: 2026-09-08
 
 This file is the single source of truth for the project. It reflects the repo state, the major issue history in the GitHub Kanban board, the architectural decisions captured in ADRs, and the current implementation status for the backend service that powers the VeloCity frontend.
 
@@ -8,10 +8,10 @@ This file is the single source of truth for the project. It reflects the repo st
 
 VeloCity is an e-bike rental platform. The backend exists to make the booking flow robust, safe, and testable under real-world concurrency and business rules.
 
-The project is not just CRUD. The core business risk is preventing double-booking for the same physical bike on overlapping dates while keeping the domain model clean and the API easy for a React frontend to consume.
+The project is about handling the core business risk which is preventing double-booking for the same physical bike on overlapping dates while keeping the domain model clean and the API easy for a React frontend to consume.
 
 The core product workflow is:
-- browse available bikes and models
+- browse available bikes
 - register/login as a client
 - reserve a bike for a date range
 - pay / confirm a reservation
@@ -33,7 +33,6 @@ Implemented areas:
 
 Current emphasis:
 - frontend contract alignment
-- stable DTO contracts and pagination shape
 - security + ownership enforcement for client requests
 - cleanup of edge cases, observability, and integration hardening
 
@@ -83,13 +82,14 @@ Architectural rules visible in the codebase:
 ## 5. Domain model
 
 ### User
-Fields include id, email, passwordHash, fullName, phone, status, role, city, joinedDate.
+Fields include id, email, passwordHash, fullName, phone, status, role, city, joinedDate, lastModified, version.
 Rules:
 - unique email and phone
 - registration via `User.registerClient(...)`
 - profile updates via `User.updateProfile(...)`
 - block/unblock/softDelete state transitions
 - invalid user-state operations throw `InvalidUserStateException`
+- `@Version` is used for optimistic locking on update races
 
 ### BikeModel
 Fields include id, name, description, speed, range, capacity, category.
@@ -278,7 +278,6 @@ Current test priorities:
 ## 13. Known risks and current watchpoints
 
 - scheduler cadence is intentionally test/dev-oriented in some phases; production tuning is a deliberate follow-up concern
-- security configuration must remain careful to avoid locking Swagger or frontend routes
 - database invariants are the source of truth for concurrency safety; the service layer is not the hard guarantee
 - frontend integration will surface contract drift if DTOs or pagination envelopes change without coordination
 - Java 25 + Spring Boot 4.1.0 requires a consistent local environment; build/test behavior should be aligned across dev, CI, and IDEs

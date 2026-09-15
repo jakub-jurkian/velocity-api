@@ -51,7 +51,7 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
                 "Standard commuter e-bike",
                 25,
                 60,
-                120,
+                40,
                 BikeCategory.AGILITY
         );
         entityManager.persist(model);

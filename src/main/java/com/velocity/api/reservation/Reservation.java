@@ -8,6 +8,8 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -17,6 +19,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "reservations")
+@EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Reservation {
@@ -33,6 +36,7 @@ public class Reservation {
     @Enumerated(EnumType.STRING)
     private ReservationStatus status;
     @Column(nullable = false, updatable = false)
+    @CreatedDate
     private Instant createdAt;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -44,11 +48,6 @@ public class Reservation {
 
     @Version // enables optimistic locking
     private Long version;
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = Instant.now();
-    }
 
     public void transitionTo(ReservationStatus newStatus, LocalDate currentDate) throws LateCancelException {
         if (this.status == newStatus) return;
@@ -64,7 +63,7 @@ public class Reservation {
         }
 
         if (newStatus.equals(ReservationStatus.CANCELLED) && !currentDate.isBefore(this.startDate)) {
-            throw new LateCancelException("The reservation cannot be cancelled after end date.");
+            throw new LateCancelException("The reservation cannot be cancelled on or after the start date.");
         }
 
         this.status = newStatus;
@@ -75,18 +74,29 @@ public class Reservation {
     }
 
     private Reservation(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, BigDecimal totalCost) {
+        validateTotalCost(totalCost);
+        this.user = requireNonNull(user, "User");
+        this.bikeInstance = requireNonNull(bikeInstance, "Bike instance");
+        this.startDate = requireNonNull(startDate, "Start date");
+        this.endDate = requireNonNull(endDate, "End date");
+        this.totalCost = requireNonNull(totalCost, "Total cost");
+        this.status = ReservationStatus.PENDING;
+
         long days = ChronoUnit.DAYS.between(startDate, endDate);
         if (days < 3 || days > 21) {
-            throw new IllegalArgumentException("Amount of days cannot be greater than 21 or smaller than 3.");
+            throw new IllegalArgumentException("Amount of days must be between 3 and 21.");
         }
-        if (!endDate.isAfter(startDate)) {
-            throw new IllegalArgumentException("End date must be greater than Start date.");
+    }
+
+    private <T> T requireNonNull(T value, String fieldName) {
+        if (value == null) {
+            throw new IllegalArgumentException(fieldName + " is required.");
         }
-        this.user = user;
-        this.bikeInstance = bikeInstance;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.totalCost = totalCost;
-        this.status = ReservationStatus.PENDING;
+        return value;
+    }
+
+    private void validateTotalCost(BigDecimal totalCost) {
+        if (totalCost.compareTo(BigDecimal.ZERO) <= 0)
+            throw new IllegalArgumentException("Total cost must be greater than zero.");
     }
 }
