@@ -17,18 +17,18 @@ VeloCity Fleet API is the backend service behind the VeloCity rental app (React 
 
 Every tool here earns its place - picked for a specific job.
 
-| Technology | Why it's here |
-|---|---|
-| **Java 25 & Spring Boot 4** | The dominant backend stack in Polish enterprise, fintech, and banking. |
+| Technology | Why it's here                                                                                                     |
+|---|-------------------------------------------------------------------------------------------------------------------|
+| **Java 25 & Spring Boot 4** | This stack offers stability & strictness for developing backend solutions.                                        |
 | **PostgreSQL** | Keeps booking and financial data consistent — and enforces the no-double-booking guarantee at the database level. |
-| **Hibernate / JPA** | Maps the domain model to tables without hand-writing SQL for everyday access. |
-| **Liquibase** | Every schema change is versioned and repeatable, the way real teams manage databases. |
-| **Spring Security + JWT** | Stateless authentication and role-based access (client vs admin). |
-| **BigDecimal** | Exact money arithmetic — no floating-point rounding on prices. |
-| **JUnit 5 & Mockito** | Automated tests, including proof that double-booking is blocked. |
-| **Docker & Docker Compose** | One-command local database and a containerized, deploy-anywhere app. |
-| **GitHub Actions** | Continuous integration — every change is built and tested automatically. |
-| **Swagger / OpenAPI** | Interactive, always-current API docs to easily navigate through the app. |
+| **Hibernate / JPA** | Maps the domain model to tables without hand-writing SQL for everyday access.                                     |
+| **Liquibase** | Every schema change is versioned and repeatable, the way real teams manage databases.                             |
+| **Spring Security + JWT** | Stateless authentication and role-based access (client vs admin).                                                 |
+| **BigDecimal** | Exact money arithmetic — no floating-point rounding on prices.                                                    |
+| **JUnit 5 & Mockito** | Automated tests, including proof that double-booking is blocked.                                                  |
+| **Docker & Docker Compose** | One-command local database and a containerized, deploy-anywhere app.                                              |
+| **GitHub Actions** | Continuous integration — every change is built and tested automatically.                                          |
+| **Swagger / OpenAPI** | Interactive, always-current API docs to easily navigate through the app.                                          |
 
 ## Architecture
 
@@ -83,20 +83,3 @@ Navigate to the interactive Swagger UI at: `http://localhost:8080/swagger-ui.htm
 | `PATCH` | `/api/v1/reservations/{id}/status` | Transition reservation state (e.g., Cancel) | Client / Admin |
 | `POST` | `/api/v1/auth/register` | Create a new user account | Public |
 | `POST` | `/api/v1/auth/login` | Authenticate and receive JWT | Public |
-
-## Status & Roadmap
-
-This project is under active development.
-
-**Currently Built:**
-
-- Rich Domain Model for reservations (strict state machine transitions).
-- Pricing calculation logic.
-- Global RFC 7807 exception handling and strict JPA transaction boundaries.
-- Liquibase database migrations and `ddl-auto: validate` setup.
-
-**Coming Next:**
-
-- The core concurrency hook: PostgreSQL range types and exclusion constraints to physically block double-bookings at the disk level.
-- Spring Security implementation with JWT access control.
-- Admin-facing fleet management endpoints.

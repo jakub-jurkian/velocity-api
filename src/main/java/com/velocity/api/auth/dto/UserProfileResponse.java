@@ -4,7 +4,7 @@ import com.velocity.api.common.City;
 import com.velocity.api.user.User;
 import com.velocity.api.user.UserRole;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.UUID;
 
 public record UserProfileResponse(
@@ -14,7 +14,7 @@ public record UserProfileResponse(
         String phone,
         UserRole role,
         City city,
-        LocalDate joinedDate
+        Instant createdAt
 ) {
     public static UserProfileResponse from(User user) {
         return new UserProfileResponse(
@@ -24,7 +24,7 @@ public record UserProfileResponse(
                 user.getPhone(),
                 user.getRole(),
                 user.getCity(),
-                user.getJoinedDate()
+                user.getCreatedAt()
         );
     }
 }
