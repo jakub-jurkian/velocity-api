@@ -66,7 +66,7 @@ public class AuthService {
 
         // gather extra claims
         HashMap<String, Object> extraClaims = new HashMap<>();
-        extraClaims.put("id", principal.getId());
+        extraClaims.put("userId", principal.getId());
         extraClaims.put("role", principal.getRole());
 
         // call token generator
