@@ -17,6 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @RestController
@@ -42,6 +43,10 @@ public class ReservationController {
             description = "Returns a list of bike models available within the specified date range and target city, taking into account the user's location."
     )
     public ResponseEntity<AvailabilityResponse> getAvailableModels(@RequestParam LocalDate startDate, @RequestParam LocalDate endDate, @RequestParam City city, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        int days = Math.toIntExact(ChronoUnit.DAYS.between(startDate, endDate));
+        if (days < 3 || days > 21) {
+            throw new IllegalArgumentException("Rental duration must be between 3 and 21 days.");
+        }
         AvailabilityResponse response = reservationService.getAvailableModels(startDate, endDate, city, userDetails.getCity());
         return ResponseEntity.ok(response);
     }

@@ -1,5 +1,7 @@
 package com.velocity.api.config;
 
+import com.velocity.api.security.DelegatingAccessDeniedHandler;
+import com.velocity.api.security.DelegatingAuthenticationEntryPoint;
 import com.velocity.api.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +36,8 @@ public class SecurityConfig {
     @Value("${cors.allowed-origins}")
     private List<String> allowedOrigins;
     private final JwtAuthenticationFilter jwtAuthFilter;
+    private final DelegatingAccessDeniedHandler accessDeniedHandler;
+    private final DelegatingAuthenticationEntryPoint authEntryPoint;
 
     // tells Spring to run this method once, take the resulting
     // BCryptPasswordEncoder object, and put it into the application context.
@@ -51,6 +55,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/swagger-ui.html", "/api/swagger-ui/**", "/api/api-docs/**", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(customizer ->
+                        customizer.authenticationEntryPoint(authEntryPoint)
+                                .accessDeniedHandler(accessDeniedHandler)
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .cors(c -> c.configurationSource(corsConfigurationSource()));
