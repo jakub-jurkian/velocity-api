@@ -23,7 +23,7 @@ public class RentalCostCalculatorTest {
         RentalCostCalculator calculator = new RentalCostCalculator(flatRate);
         BigDecimal expectedCost = new BigDecimal("77.50");
         // 2. Act
-        BigDecimal actualCost = calculator.calculate(rentalDays);
+        BigDecimal actualCost = calculator.calculateQuote(rentalDays).totalCost();
         // 3. Assert
         assertThat(actualCost).isEqualByComparingTo(expectedCost);
     }
@@ -34,7 +34,7 @@ public class RentalCostCalculatorTest {
         int rentalDays = 3;
         RentalCostCalculator calculator = new RentalCostCalculator(BigDecimal.ZERO);
 
-        BigDecimal actualCost = calculator.calculate(rentalDays);
+        BigDecimal actualCost = calculator.calculateQuote(rentalDays).totalCost();
 
         assertThat(actualCost).isEqualByComparingTo(BigDecimal.ZERO);
     }
@@ -47,7 +47,7 @@ public class RentalCostCalculatorTest {
         RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("15.50"));
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> calculator.calculate(rentalDays));
+        assertThrows(IllegalArgumentException.class, () -> calculator.calculateQuote(rentalDays));
     }
 
     @Test
@@ -58,7 +58,7 @@ public class RentalCostCalculatorTest {
         BigDecimal expectedCost = new BigDecimal("70.00");
 
         // Act
-        BigDecimal actualCost = calculator.calculate(7);
+        BigDecimal actualCost = calculator.calculateQuote(7).totalCost();
 
         // Assert
         assertThat(actualCost).isEqualByComparingTo(expectedCost);
@@ -73,7 +73,7 @@ public class RentalCostCalculatorTest {
         BigDecimal expectedCost = new BigDecimal("64.00");
 
         // Act
-        BigDecimal actualCost = calculator.calculate(8);
+        BigDecimal actualCost = calculator.calculateQuote(8).totalCost();
 
         // Assert
         assertThat(actualCost).isEqualByComparingTo(expectedCost);
@@ -88,7 +88,7 @@ public class RentalCostCalculatorTest {
         BigDecimal expectedCost = new BigDecimal("112.00");
 
         // Act
-        BigDecimal actualCost = calculator.calculate(14);
+        BigDecimal actualCost = calculator.calculateQuote(14).totalCost();
 
         // Assert
         assertThat(actualCost).isEqualByComparingTo(expectedCost);
@@ -103,7 +103,7 @@ public class RentalCostCalculatorTest {
         BigDecimal expectedCost = new BigDecimal("90.00");
 
         // Act
-        BigDecimal actualCost = calculator.calculate(15);
+        BigDecimal actualCost = calculator.calculateQuote(15).totalCost();
 
         // Assert
         assertThat(actualCost).isEqualByComparingTo(expectedCost);
@@ -118,7 +118,7 @@ public class RentalCostCalculatorTest {
         BigDecimal expectedCost = new BigDecimal("126.00");
 
         // Act
-        BigDecimal actualCost = calculator.calculate(21);
+        BigDecimal actualCost = calculator.calculateQuote(21).totalCost();
 
         // Assert
         assertThat(actualCost).isEqualByComparingTo(expectedCost);
