@@ -1,5 +1,6 @@
 package com.velocity.api.pricing;
 
+import com.velocity.api.pricing.dto.RentalQuote;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -22,18 +23,22 @@ public class RentalCostCalculator {
         this.dailyFlatRate = dailyFlatRate;
     }
 
-    public BigDecimal calculate(int rentalDays) {
-        BigDecimal standardCost = this.dailyFlatRate.multiply(BigDecimal.valueOf(rentalDays));
-        final BigDecimal multiplier;
+    public RentalQuote calculateQuote(int rentalDays) {
         if (rentalDays <= 0) {
             throw new IllegalArgumentException("The rental days should be greater than 0.");
-        } else if (rentalDays <= TIER_1_MAX_DAYS) {
+        }
+        BigDecimal standardCost = this.dailyFlatRate.multiply(BigDecimal.valueOf(rentalDays));
+        final BigDecimal multiplier;
+        if (rentalDays <= TIER_1_MAX_DAYS) {
             multiplier = BigDecimal.ONE;
         } else if (rentalDays <= TIER_2_MAX_DAYS) {
             multiplier = TIER_2_MULTIPLIER;
         } else {
             multiplier = TIER_3_MULTIPLIER;
         }
-        return standardCost.multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalCost = standardCost.multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+        int discountPercentage = 100 - multiplier.multiply(BigDecimal.valueOf(100)).intValue();
+        BigDecimal effectiveDailyRate = this.dailyFlatRate.multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+        return new RentalQuote(rentalDays, this.dailyFlatRate, effectiveDailyRate, discountPercentage, totalCost);
     }
 }
