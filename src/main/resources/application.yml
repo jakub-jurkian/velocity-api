@@ -1,6 +1,8 @@
 spring:
   application:
     name: velocity-api
+  profiles:
+    default: dev
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
@@ -13,6 +15,8 @@ spring:
     web:
       pageable:
         max-page-size: 50
+  web:
+    locale: en
 
 springdoc:
   swagger-ui:

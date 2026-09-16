@@ -65,7 +65,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
     public void getMyReservations_Unauthenticated_Returns401() throws Exception {
         mockMvc.perform(get("/api/v1/reservations/my")
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
