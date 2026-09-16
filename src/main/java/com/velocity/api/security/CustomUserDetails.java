@@ -49,6 +49,6 @@ public record CustomUserDetails(
 
     @Override
     public boolean isAccountNonLocked() {
-        return this.status != UserStatus.BLOCKED;
+        return this.status == UserStatus.ACTIVE;
     }
 }

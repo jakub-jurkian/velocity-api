@@ -12,7 +12,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 
@@ -25,6 +27,8 @@ public class JwtAuthenticationFilterTest {
     private TokenBlacklistRepository tokenBlacklistRepository;
     @Mock
     private UserDetailsService userDetailsService;
+    @Mock
+    private HandlerExceptionResolver resolver;
 
     @InjectMocks
     private JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -43,7 +47,13 @@ public class JwtAuthenticationFilterTest {
         jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 
         // proves doFilter was called
-        verify(filterChain).doFilter(request, response);
+        verifyNoInteractions(filterChain);
         verifyNoInteractions(userDetailsService);
+        verify(resolver).resolveException(
+                eq(request),
+                eq(response),
+                isNull(),
+                any(BadCredentialsException.class)
+        );
     }
 }
