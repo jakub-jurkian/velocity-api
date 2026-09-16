@@ -9,6 +9,7 @@ import com.velocity.api.pricing.RentalCostCalculator;
 import com.velocity.api.bike.exception.BikeNotAvailableException;
 import com.velocity.api.bike.exception.InvalidBikeStateException;
 import com.velocity.api.common.exception.ResourceNotFoundException;
+import com.velocity.api.pricing.dto.RentalQuote;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
 import com.velocity.api.reservation.dto.*;
@@ -67,8 +68,7 @@ public class ReservationService {
         }
 
         int days = Math.toIntExact(ChronoUnit.DAYS.between(req.startDate(), req.endDate()));
-        BigDecimal totalCost = rentalCostCalculator.calculate(days);
-
+        BigDecimal totalCost = rentalCostCalculator.calculateQuote(days).totalCost();
         Reservation reservation = Reservation.book(user, bike, req.startDate(), req.endDate(), totalCost);
         Reservation bookedReservation = reservationRepository.save(reservation);
         log.info(
@@ -84,15 +84,15 @@ public class ReservationService {
     }
 
     @Transactional(readOnly = true)
-    public List<AvailableModelResponse> getAvailableModels(LocalDate startDate, LocalDate endDate, City city, City userCity) throws AuthorizationDeniedException {
+    public AvailabilityResponse getAvailableModels(LocalDate startDate, LocalDate endDate, City city, City userCity) throws AuthorizationDeniedException {
         if (!userCity.equals(city)) {
             throw new AuthorizationDeniedException("It's not the authenticated user's city.");
         }
         List<AvailableModelProjection> availableProjections = bikeInstanceRepository.findAvailableModels(startDate, endDate, city.toString());
         int days = Math.toIntExact(ChronoUnit.DAYS.between(startDate, endDate));
-        BigDecimal totalCost = rentalCostCalculator.calculate(days);
-        return availableProjections.stream().map(projection ->
-                AvailableModelResponse.from(projection, totalCost)).toList();
+        RentalQuote rentalQuote = rentalCostCalculator.calculateQuote(days);
+        List<AvailableBikeModel> availableBikeModel = availableProjections.stream().map(AvailableBikeModel::from).toList();
+        return new AvailabilityResponse(rentalQuote, availableBikeModel);
     }
 
     @Transactional // if not added, status will be updated in Java memory only.

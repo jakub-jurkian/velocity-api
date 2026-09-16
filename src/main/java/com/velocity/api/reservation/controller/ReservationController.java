@@ -2,10 +2,7 @@ package com.velocity.api.reservation.controller;
 
 import com.velocity.api.common.City;
 import com.velocity.api.common.dto.PaginatedResponse;
-import com.velocity.api.reservation.dto.AvailableModelResponse;
-import com.velocity.api.reservation.dto.ReservationBookRequest;
-import com.velocity.api.reservation.dto.ReservationBookResponse;
-import com.velocity.api.reservation.dto.ReservationResponse;
+import com.velocity.api.reservation.dto.*;
 import com.velocity.api.reservation.service.ReservationService;
 import com.velocity.api.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,7 +17,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -45,8 +41,8 @@ public class ReservationController {
             summary = "Check available bike models",
             description = "Returns a list of bike models available within the specified date range and target city, taking into account the user's location."
     )
-    public ResponseEntity<List<AvailableModelResponse>> getAvailableModels(@RequestParam LocalDate startDate, @RequestParam LocalDate endDate, @RequestParam City city, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        List<AvailableModelResponse> response = reservationService.getAvailableModels(startDate, endDate, city, userDetails.getCity());
+    public ResponseEntity<AvailabilityResponse> getAvailableModels(@RequestParam LocalDate startDate, @RequestParam LocalDate endDate, @RequestParam City city, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        AvailabilityResponse response = reservationService.getAvailableModels(startDate, endDate, city, userDetails.getCity());
         return ResponseEntity.ok(response);
     }
 
