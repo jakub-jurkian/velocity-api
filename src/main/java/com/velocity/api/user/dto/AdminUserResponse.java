@@ -1,5 +1,6 @@
 package com.velocity.api.user.dto;
 
+import com.velocity.api.common.City;
 import com.velocity.api.user.User;
 import com.velocity.api.user.UserRole;
 import com.velocity.api.user.UserStatus;
@@ -12,6 +13,7 @@ public record AdminUserResponse(
         String email,
         String fullName,
         String phone,
+        City city,
         UserStatus status,
         UserRole role,
         Instant createdAt
@@ -22,6 +24,7 @@ public record AdminUserResponse(
                 user.getEmail(),
                 user.getFullName(),
                 user.getPhone(),
+                user.getCity(),
                 user.getStatus(),
                 user.getRole(),
                 user.getCreatedAt());
