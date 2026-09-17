@@ -46,7 +46,7 @@ public class AuthenticationIntegrationTest extends BaseIntegrationTest {
                 )
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
-                .andExpect(jsonPath("$.title").value("Resource Not Found"))
+                .andExpect(jsonPath("$.title").value("Not Found"))
                 .andExpect(authenticated().withUsername(testUserEmail))
                 .andExpect(authenticated().withRoles("CLIENT"));
     }
