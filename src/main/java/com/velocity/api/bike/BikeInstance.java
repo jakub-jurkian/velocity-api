@@ -1,6 +1,8 @@
 package com.velocity.api.bike;
 
+import com.velocity.api.bike.exception.InvalidBikeStatusTransitionException;
 import com.velocity.api.common.City;
+import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -27,6 +29,9 @@ public class BikeInstance {
     @JoinColumn(name = "bike_model_id", nullable = false)
     private BikeModel bikeModel;
 
+    @Version
+    Long version;
+
     public static BikeInstance initialize(BikeModel bikeModel, City city) {
         return new BikeInstance(bikeModel, city);
     }
@@ -38,5 +43,19 @@ public class BikeInstance {
         this.bikeModel = bikeModel;
         this.city = city;
         this.status = BikeStatus.ACTIVE; // Default state for a new physical bike
+    }
+
+    public void transitionTo(BikeStatus newStatus) {
+        if (this.status == newStatus) return;
+
+        if (this.status == BikeStatus.RETIRED) {
+            throw new InvalidBikeStatusTransitionException("A retired bike cannot change status.");
+        }
+
+        if (this.status == BikeStatus.LOST && (newStatus == BikeStatus.ACTIVE || newStatus == BikeStatus.RETIRED)) {
+            throw new InvalidBikeStatusTransitionException("Found bikes must go to MAINTENANCE first.");
+        }
+
+        this.status = newStatus;
     }
 }

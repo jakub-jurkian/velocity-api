@@ -3,7 +3,11 @@ package com.velocity.api.bike.repository;
 import com.velocity.api.bike.BikeInstance;
 import com.velocity.api.bike.BikeStatus;
 import com.velocity.api.bike.repository.projection.AvailableModelProjection;
+import com.velocity.api.bike.repository.projection.InstanceProjection;
 import com.velocity.api.common.City;
+import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -37,4 +41,7 @@ public interface BikeInstanceRepository extends JpaRepository<BikeInstance, UUID
             ORDER BY m.id, i.id;
             """)
     List<AvailableModelProjection> findAvailableModels(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("city") String city);
+
+    Page<InstanceProjection> findBy(@NonNull Pageable pageable);
+    Page<InstanceProjection> findByStatus(BikeStatus status, Pageable pageable);
 }

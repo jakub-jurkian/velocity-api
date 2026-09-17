@@ -2,30 +2,33 @@ package com.velocity.api.common.exception;
 
 import com.velocity.api.bike.exception.BikeNotAvailableException;
 import com.velocity.api.bike.exception.InvalidBikeStateException;
+import com.velocity.api.bike.exception.InvalidBikeStatusTransitionException;
 import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
 import com.velocity.api.reservation.exception.LateCancelException;
 import com.velocity.api.user.exception.CannotDemoteSelfException;
 import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.user.exception.InvalidUserStateException;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
+import org.springframework.http.*;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
-import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
-import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.net.URI;
-import java.nio.file.AccessDeniedException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +40,7 @@ import java.util.Map;
  */
 @RestControllerAdvice
 @Slf4j
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     /**
      * Catches validation errors when a request body fails @Valid constraints.
@@ -46,11 +49,14 @@ public class GlobalExceptionHandler {
      * @param ex the exception containing the validation errors
      * @return a ProblemDetail object with validation failure details
      */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ProblemDetail handleValidationExceptions(MethodArgumentNotValidException ex) {
-        log.warn("Validation failed for request: {}", ex.getMessage());
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            @NonNull MethodArgumentNotValidException ex,
+            @NonNull HttpHeaders headers,
+            @NonNull HttpStatusCode status,
+            @NonNull WebRequest request) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST,
+                status,
                 "Validation failed for one or more fields."
         );
         problem.setTitle("Bad Request");
@@ -64,8 +70,7 @@ public class GlobalExceptionHandler {
         }
 
         problem.setProperty("invalidFields", errors);
-
-        return problem;
+        return handleExceptionInternal(ex, problem, headers, status, request);
     }
 
     /**
@@ -75,8 +80,9 @@ public class GlobalExceptionHandler {
      * @param ex the custom exception containing the resource missing message
      * @return a ProblemDetail object with the 404 status
      */
-    @ExceptionHandler({ResourceNotFoundException.class, NoResourceFoundException.class})
-    public ProblemDetail handleNotFoundException(Exception ex) {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ProblemDetail handleNotFoundException(ResourceNotFoundException ex) {
         log.warn("Resource not found: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.NOT_FOUND,
@@ -211,19 +217,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail handleBadCredentialsException(BadCredentialsException ex) {
-        log.warn("Invalid email or password: {}", ex.getMessage());
+        log.warn("Bad credentials: {}", ex.getMessage());
         return ProblemDetail.forStatusAndDetail(
                 HttpStatus.UNAUTHORIZED,
-                "Invalid email or password."
-        );
-    }
-
-    @ExceptionHandler(AuthorizationDeniedException.class)
-    public ProblemDetail handleAuthorizationDeniedException(AuthorizationDeniedException ex) {
-        log.warn("Forbidden action: {}", ex.getMessage());
-        return ProblemDetail.forStatusAndDetail(
-                HttpStatus.FORBIDDEN,
-                "Forbidden action."
+                ex.getMessage()
         );
     }
 
@@ -235,19 +232,6 @@ public class GlobalExceptionHandler {
                 ex.getMessage()
         );
         problem.setTitle("Invalid User State Change");
-        return problem;
-    }
-
-    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ProblemDetail handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException ex) {
-        log.warn("Wrong HTTP Method requested: {}", ex.getMethod());
-
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.METHOD_NOT_ALLOWED,
-                "Wrong HTTP Method."
-        );
-        problem.setTitle("Wrong HTTP Method");
-
         return problem;
     }
 
@@ -306,6 +290,54 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ProblemDetail handleAObjectOptimisticLockingFailureException(ObjectOptimisticLockingFailureException ex) {
+        log.warn("Optimistic Locking Failure: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                "The resource was modified by another process. Please refresh the latest state and try again."
+        );
+        problem.setTitle("Modification conflict");
+        return problem;
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleExceptionInternal(
+            @NonNull Exception ex, @Nullable Object body,
+            @NonNull HttpHeaders headers, @NonNull HttpStatusCode status,
+            @NonNull WebRequest request) {
+        if (body instanceof ProblemDetail problem) {
+            if (problem.getTitle() == null) {
+                problem.setTitle(HttpStatus.valueOf(status.value()).getReasonPhrase());
+            }
+            problem.setType(URI.create("about:blank"));
+            if (problem.getInstance() == null && request instanceof ServletWebRequest swr) {
+                problem.setInstance(URI.create(swr.getRequest().getRequestURI()));
+            }
+        }
+        if (status.is4xxClientError()) {
+            log.warn("Framework client error encountered [{}] : {}", status.value(), ex.getMessage());
+        }
+        if (status.is5xxServerError()) {
+            log.error("Server error encountered [{}] : {}", status.value(), ex.getMessage());
+        }
+
+        // Thanks for letting me inspect and polish it, now package it into a proper ResponseEntity and send it on its way.
+        return super.handleExceptionInternal(ex, body, headers, status, request);
+    }
+
+
+    @ExceptionHandler(InvalidBikeStatusTransitionException.class)
+    public ProblemDetail handleInvalidBikeStatusTransitionException(InvalidBikeStatusTransitionException ex) {
+        log.warn("Invalid Bike State Change: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNPROCESSABLE_CONTENT,
+                ex.getMessage()
+        );
+        problem.setTitle("Invalid State Transition");
+        return problem;
+    }
+
     /**
      * Fallback handler for any unhandled exceptions.
      * Maps to HTTP 500 Internal Server Error.
@@ -326,5 +358,4 @@ public class GlobalExceptionHandler {
 
         return problem;
     }
-
 }
