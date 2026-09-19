@@ -18,4 +18,6 @@ databaseChangeLog:
   - include:
       file: db/changelog/010-align-reservation-created-at-tz.xml
   - include:
+      file: db/changelog/011-add-indexes.xml
+  - include:
       file: db/changelog/dev/999-dev-seed.xml
