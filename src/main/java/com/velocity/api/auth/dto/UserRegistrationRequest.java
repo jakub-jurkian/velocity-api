@@ -18,12 +18,13 @@ public record UserRegistrationRequest(
         @NotNull(message = "City is required")
         City city,
         @NotBlank(message = "Phone number is required")
-        @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Phone must be a valid international format (e.g., +48123456789)")
+        @Pattern(regexp = "^\\+[1-9]\\d{7,14}$", message = "Phone must be a valid international format (e.g., +48123456789)")
         String phone
 ) {
-    // compact constructor
+    // compact constructor - normalizes before bean validation inspects the values
     public UserRegistrationRequest {
-        if (email != null) email = email.toLowerCase().trim();
+        if (email != null) email = email.trim().toLowerCase();
         if (fullName != null) fullName = fullName.trim();
+        if (phone != null) phone = phone.trim();
     }
 }
