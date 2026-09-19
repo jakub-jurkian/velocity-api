@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ReservationRepository extends JpaRepository<Reservation, UUID> {
@@ -51,4 +52,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
 
     @Query("SELECT r.bikeInstance.bikeModel.name AS modelName, COUNT(r.id) AS count FROM Reservation r WHERE NOT r.status = 'CANCELLED' GROUP BY r.bikeInstance.bikeModel.name")
     List<FleetPopularityProjection> findFleetPopularity();
+
+    Optional<Reservation> findByIdAndUserId(UUID id, UUID userId);
 }

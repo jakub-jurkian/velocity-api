@@ -22,7 +22,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,14 +42,6 @@ public class ReservationService {
     private final RentalCostCalculator rentalCostCalculator;
     private final ReservationMapper reservationMapper;
     private final Clock clock;
-
-    @Transactional
-    public void transitionStatus(UUID reservationId, ReservationStatus newStatus) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found: " + reservationId));
-        reservation.transitionTo(newStatus, LocalDate.now());
-        log.info("Reservation {} transitioned to {}", reservationId, newStatus);
-    }
 
     @Transactional
     public ReservationBookResponse book(UUID userId, ReservationBookRequest req) {
@@ -85,29 +76,29 @@ public class ReservationService {
     }
 
     @Transactional(readOnly = true)
-    public AvailabilityResponse getAvailableModels(LocalDate startDate, LocalDate endDate, City city, City userCity) throws AuthorizationDeniedException {
-        if (!userCity.equals(city)) {
-            throw new AuthorizationDeniedException("It's not the authenticated user's city.");
-        }
-        List<AvailableModelProjection> availableProjections = bikeInstanceRepository.findAvailableModels(startDate, endDate, city.toString());
+    public AvailabilityResponse getAvailableModels(LocalDate startDate, LocalDate endDate, City userCity) {
+        List<AvailableModelProjection> availableProjections = bikeInstanceRepository.findAvailableModels(startDate, endDate, userCity.toString());
         int days = Math.toIntExact(ChronoUnit.DAYS.between(startDate, endDate));
         RentalQuote rentalQuote = rentalCostCalculator.calculateQuote(days);
         List<AvailableBikeModel> availableBikeModel = availableProjections.stream().map(AvailableBikeModel::from).toList();
         return new AvailabilityResponse(rentalQuote, availableBikeModel);
     }
 
+    private void transitionStatus(UUID reservationId, ReservationStatus newStatus) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found: " + reservationId));
+        reservation.transitionTo(newStatus, LocalDate.now(clock));
+        log.info("Reservation {} transitioned to {}", reservationId, newStatus);
+    }
+
     @Transactional // if not added, status will be updated in Java memory only.
     public void cancelStaleReservation(UUID id) {
-        Reservation staleReservation = reservationRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Reservation not found"));
-        staleReservation.transitionTo(ReservationStatus.CANCELLED, LocalDate.now(clock));
+        transitionStatus(id, ReservationStatus.CANCELLED);
     }
 
     @Transactional
     public void completePastDueConfirmedReservations(UUID id) {
-        Reservation pastDueConfirmedReservation = reservationRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Reservation not found"));
-        pastDueConfirmedReservation.transitionTo(ReservationStatus.COMPLETED, LocalDate.now(clock));
+        transitionStatus(id, ReservationStatus.COMPLETED);
     }
 
     @Transactional(readOnly = true)
@@ -117,23 +108,15 @@ public class ReservationService {
     }
 
     @Transactional
-    public void confirmReservation(UUID reservationId, UUID userId) throws AuthorizationDeniedException {
-        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
-
-        if (!(reservation.getUser().getId().equals(userId))) {
-            throw new AuthorizationDeniedException("The User cannot access the reservation of other user");
-        }
+    public void confirmReservation(UUID reservationId, UUID userId) {
+        Reservation reservation = reservationRepository.findByIdAndUserId(reservationId, userId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
 
         reservation.transitionTo(ReservationStatus.CONFIRMED, LocalDate.now(clock));
     }
 
     @Transactional
     public void cancelReservation(UUID reservationId, UUID userId) throws LateCancelException {
-        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
-
-        if (!(reservation.getUser().getId().equals(userId))) {
-            throw new AuthorizationDeniedException("The User cannot access the reservation of other user");
-        }
+        Reservation reservation = reservationRepository.findByIdAndUserId(reservationId, userId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
 
         reservation.transitionTo(ReservationStatus.CANCELLED, LocalDate.now(clock));
     }
