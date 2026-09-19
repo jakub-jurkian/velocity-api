@@ -13,7 +13,7 @@ public record ReservationBookRequest(
         @NotNull(message = "Bike instance ID is required")
         UUID bikeInstanceId,
         @NotNull(message = "Start date is required")
-        @FutureOrPresent(message = "Start date cannot be in the past")
+        @Future(message = "Start date cannot be in the past or present")
         LocalDate startDate,
         @NotNull(message = "End date is required")
         @Future(message = "End date must be in the future")

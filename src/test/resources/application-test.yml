@@ -8,3 +8,6 @@ security:
     expiration-ms: 86400000 # 24h in ms
 cors:
   allowed-origins: http://localhost:5173
+
+scheduling:
+  enabled: false

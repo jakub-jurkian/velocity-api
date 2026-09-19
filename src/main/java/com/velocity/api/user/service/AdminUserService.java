@@ -69,7 +69,7 @@ public class AdminUserService {
         String email = request.email().isPresent() ? request.email().get() : user.getEmail();
 
         if (!email.equalsIgnoreCase(user.getEmail()) && userRepository.findByEmail(email).isPresent()) {
-            throw new EmailAlreadyRegisteredException("The email address " + request.email() + " is already in use.");
+            throw new EmailAlreadyRegisteredException("This email address is already in use.");
         }
 
         user.updateProfileByAdmin(fullName, phone, city, email);

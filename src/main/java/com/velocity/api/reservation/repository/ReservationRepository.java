@@ -45,7 +45,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     long countActiveRentals();
 
     @Query("""
-             SELECT YEAR(r.startDate) AS year, MONTH(r.startDate) AS month, SUM(r.totalCost) AS revenue FROM Reservation r WHERE NOT r.status = 'CANCELLED' GROUP BY YEAR(r.startDate), MONTH(r.startDate) ORDER BY YEAR(r.startDate) ASC, MONTH(r.startDate) ASC
+             SELECT YEAR(r.startDate) AS year, MONTH(r.startDate) AS month, SUM(r.totalCost) AS revenue FROM Reservation r WHERE r.status IN ('CONFIRMED', 'COMPLETED') GROUP BY YEAR(r.startDate), MONTH(r.startDate) ORDER BY YEAR(r.startDate) ASC, MONTH(r.startDate) ASC
             """)
     List<RevenueByMonthProjection> findRevenueTrend();
 
