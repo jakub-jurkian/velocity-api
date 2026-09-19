@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -19,10 +21,11 @@ import java.util.List;
 public class AnalyticsService {
     private final ReservationRepository reservationRepository;
     private final BikeInstanceRepository bikeInstanceRepository;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public DashboardMetricsResponse getDashboardMetrics() {
-        long activeRentals = reservationRepository.countActiveRentals();
+        long activeRentals = reservationRepository.countActiveRentals(LocalDate.now(clock));
         long totalActiveFleetSize = bikeInstanceRepository.countByStatus(BikeStatus.ACTIVE);
         BigDecimal totalRevenue = reservationRepository.findTotalRevenue();
         List<DashboardMetricsResponse.MonthlyRevenue> revenueTrend = reservationRepository.findRevenueTrend().stream()
