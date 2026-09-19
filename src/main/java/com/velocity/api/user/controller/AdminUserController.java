@@ -64,7 +64,7 @@ public class AdminUserController {
             summary = "Update user details",
             description = "Partially updates user profile fields (e.g., email, personal information) for the specified user ID."
     )
-    public ResponseEntity<Void> updateUser(@PathVariable UUID id, @RequestBody AdminUserUpdateRequest request) {
+    public ResponseEntity<Void> updateUser(@PathVariable UUID id, @Valid @RequestBody AdminUserUpdateRequest request) {
         adminUserService.updateUser(id, request);
         return ResponseEntity.noContent().build();
     }
