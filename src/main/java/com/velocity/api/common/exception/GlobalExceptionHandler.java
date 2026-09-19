@@ -8,6 +8,7 @@ import com.velocity.api.reservation.exception.LateCancelException;
 import com.velocity.api.user.exception.CannotDemoteSelfException;
 import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.user.exception.InvalidUserStateException;
+import com.velocity.api.user.exception.PhoneAlreadyRegisteredException;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -103,7 +104,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      */
     @ExceptionHandler(EmailAlreadyRegisteredException.class)
     public ProblemDetail handleEmailAlreadyRegisteredException(EmailAlreadyRegisteredException ex) {
-        log.warn("Registration failed - Conflict: {}", ex.getMessage());
+        log.warn("Resource Conflict: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problem.setTitle("Resource Conflict");
+        problem.setType(URI.create("about:blank"));
+        return problem;
+    }
+
+    @ExceptionHandler(PhoneAlreadyRegisteredException.class)
+    public ProblemDetail handlePhoneAlreadyRegisteredException(PhoneAlreadyRegisteredException ex) {
+        log.warn("Resource Conflict: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,
                 ex.getMessage()
@@ -124,29 +137,35 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({DataIntegrityViolationException.class, CannotAcquireLockException.class})
     public ProblemDetail handleDataIntegrityViolationException(DataAccessException ex) {
         log.warn("Database integrity violation occurred: {}", ex.getMessage());
+        String constraint = extractConstraintName(ex);
 
-        String detail = "A database conflict occurred.";
-        String title = "Resource Conflict";
+        var mapped = switch (constraint == null ? "" : constraint.toLowerCase()) {
+            case "no_overlapping_active_reservations" ->
+                    Map.entry("Bike Not Available", "This bike is already reserved for the selected dates.");
+            case "uc_usersemail_col" -> Map.entry("Duplicate Record", "An account with this email already exists.");
+            case "uc_usersphone_col" ->
+                    Map.entry("Duplicate Record", "An account with this phone number already exists.");
+            default -> Map.entry("Resource Conflict", "A database conflict occurred.");
+        };
 
-        // Check if the exception message stems from our reservation exclusion constraint (ADR-001)
-        String rootMessage = ex.getMostSpecificCause().getMessage();
-        if (rootMessage != null && rootMessage.contains("no_overlapping_active_reservations")) {
-            detail = "This bike is already reserved for the selected dates.";
-            title = "Bike Not Available";
-        } else if (rootMessage != null && rootMessage.contains("email")) {
-            detail = "An account with this email already exists.";
-            title = "Duplicate Record";
-        }
-
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.CONFLICT,
-                detail
-        );
-        problem.setTitle(title);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, mapped.getValue());
+        problem.setTitle(mapped.getKey());
         problem.setType(URI.create("about:blank"));
-
         return problem;
     }
+
+    private String extractConstraintName(Throwable ex) {
+        Throwable cause = ex;
+        while (cause != null) {
+            if (cause instanceof org.hibernate.exception.ConstraintViolationException cve) {
+                return cve.getConstraintName();
+            }
+            cause = cause.getCause();
+        }
+        return null;
+    }
+
+
 
     /**
      * Catches illegal reservation state transition attempts.
