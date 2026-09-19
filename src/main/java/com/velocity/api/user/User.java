@@ -1,6 +1,7 @@
 package com.velocity.api.user;
 
 import com.velocity.api.common.City;
+import com.velocity.api.common.exception.DomainValidationException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -99,41 +100,41 @@ public class User {
     }
 
     private String normalizeAndValidateFullName(String fullName) {
-        if (fullName == null || fullName.isBlank()) throw new IllegalArgumentException("Full name is required");
+        if (fullName == null || fullName.isBlank()) throw new DomainValidationException("Full name is required");
         String normalizedFullName = fullName.trim();
         if (normalizedFullName.length() < 2 || normalizedFullName.length() > 100) {
-            throw new IllegalArgumentException("Name must be between 2 and 100 characters");
+            throw new DomainValidationException("Name must be between 2 and 100 characters");
         }
         return normalizedFullName;
     }
 
     private String normalizeAndValidatePhone(String phone) {
-        if (phone == null || phone.isBlank()) throw new IllegalArgumentException("Phone number is required");
+        if (phone == null || phone.isBlank()) throw new DomainValidationException("Phone number is required");
         String normalizedPhone = phone.trim();
         if (!PHONE_PATTERN.matcher(normalizedPhone).matches()) {
-            throw new IllegalArgumentException("Phone must be a valid international format (e.g., +48123456789)");
+            throw new DomainValidationException("Phone must be a valid international format (e.g., +48123456789)");
         }
         return normalizedPhone;
     }
 
     private void validateCity(City city) {
-        if (city == null) throw new IllegalArgumentException("City is required");
+        if (city == null) throw new DomainValidationException("City is required");
     }
 
     private String normalizeAndValidateEmail(String email) {
-        if (email == null || email.isBlank()) throw new IllegalArgumentException("Email is required");
+        if (email == null || email.isBlank()) throw new DomainValidationException("Email is required");
         String normalizedEmail = email.trim().toLowerCase();
         if (!EMAIL_PATTERN.matcher(normalizedEmail).matches()) {
-            throw new IllegalArgumentException("Email must be properly formatted.");
+            throw new DomainValidationException("Email must be properly formatted.");
         }
         return normalizedEmail;
     }
 
     private void validatePasswordHash(String password) {
-        if (password == null) throw new IllegalArgumentException("Password is required");
+        if (password == null) throw new DomainValidationException("Password is required");
     }
 
     private void validateRole(UserRole role) {
-        if (role == null) throw new IllegalArgumentException("Role is required");
+        if (role == null) throw new DomainValidationException("Role is required");
     }
 }

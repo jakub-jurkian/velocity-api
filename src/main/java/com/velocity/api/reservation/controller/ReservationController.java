@@ -2,6 +2,7 @@ package com.velocity.api.reservation.controller;
 
 import com.velocity.api.common.City;
 import com.velocity.api.common.dto.PaginatedResponse;
+import com.velocity.api.common.exception.DomainValidationException;
 import com.velocity.api.reservation.dto.*;
 import com.velocity.api.reservation.service.ReservationService;
 import com.velocity.api.security.CustomUserDetails;
@@ -45,7 +46,7 @@ public class ReservationController {
     public ResponseEntity<AvailabilityResponse> getAvailableModels(@RequestParam LocalDate startDate, @RequestParam LocalDate endDate, @RequestParam City city, @AuthenticationPrincipal CustomUserDetails userDetails) {
         int days = Math.toIntExact(ChronoUnit.DAYS.between(startDate, endDate));
         if (days < 3 || days > 21) {
-            throw new IllegalArgumentException("Rental duration must be between 3 and 21 days.");
+            throw new DomainValidationException("Rental duration must be between 3 and 21 days.");
         }
         AvailabilityResponse response = reservationService.getAvailableModels(startDate, endDate, city, userDetails.getCity());
         return ResponseEntity.ok(response);
