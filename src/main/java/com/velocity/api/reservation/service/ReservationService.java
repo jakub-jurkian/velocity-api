@@ -69,7 +69,8 @@ public class ReservationService {
 
         int days = Math.toIntExact(ChronoUnit.DAYS.between(req.startDate(), req.endDate()));
         BigDecimal totalCost = rentalCostCalculator.calculateQuote(days).totalCost();
-        Reservation reservation = Reservation.book(user, bike, req.startDate(), req.endDate(), totalCost);
+        LocalDate currentDate = LocalDate.now(clock);
+        Reservation reservation = Reservation.book(user, bike, req.startDate(), req.endDate(), currentDate, totalCost);
         Reservation bookedReservation = reservationRepository.save(reservation);
         log.info(
                 "Booked reservation {} for user {} on bike {} from {} to {}",

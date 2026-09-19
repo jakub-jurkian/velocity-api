@@ -44,7 +44,7 @@ public class AuthService {
     @Transactional
     public UserRegistrationResponse register(UserRegistrationRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new EmailAlreadyRegisteredException("The email address " + request.email() + " is already in use.");
+            throw new EmailAlreadyRegisteredException("This email address is already in use.");
         }
 
         String encodedPassword = passwordEncoder.encode(request.password());

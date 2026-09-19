@@ -69,11 +69,14 @@ public class Reservation {
         this.status = newStatus;
     }
 
-    public static Reservation book(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, BigDecimal totalCost) {
-        return new Reservation(user, bikeInstance, startDate, endDate, totalCost);
+    public static Reservation book(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, LocalDate currentDate, BigDecimal totalCost) {
+        return new Reservation(user, bikeInstance, startDate, endDate, currentDate, totalCost);
     }
 
-    private Reservation(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, BigDecimal totalCost) {
+    private Reservation(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, LocalDate currentDate, BigDecimal totalCost) {
+        if (!startDate.isAfter(currentDate)) {
+            throw new IllegalArgumentException("Start date cannot be in past or present.");
+        }
         validateTotalCost(totalCost);
         this.user = requireNonNull(user, "User");
         this.bikeInstance = requireNonNull(bikeInstance, "Bike instance");

@@ -4,23 +4,24 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <changeSet author="velocity-dev" id="006-dev-seed-data" context="dev" runOnChange="true">
+    <changeSet author="velocity-dev" id="999-dev-seed-data" context="dev" runOnChange="true">
         <sql>
             -- ═══════════════════════════════════ USERS ═══════════════════════════════════
-            INSERT INTO users (id, full_name, email, password_hash, phone, role, status, city, joined_date)
+            INSERT INTO users (id, full_name, email, password_hash, phone, role, status, city, created_at,
+                               last_modified, version)
             VALUES ('3e2d1c0b-9f8e-4a7b-6c5d-4f3e2d1c0b9a', 'Charlie Admin', 'admin@velocity.com',
                     '$2a$10$8MJj/eiNAhpb0lvUIxHnxut7UiMsD7pdsTdUJGxsrtebf6TCF4onG',
-                    '+48500000101', 'ADMIN', 'ACTIVE', 'GDANSK', '2026-01-01'),
+                    '+48500000101', 'ADMIN', 'ACTIVE', 'GDANSK', '2026-01-01T10:00:00Z', '2026-01-01T10:00:00Z', 0),
                    ('4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'Bob Jones', 'client@velocity.com',
                     '$2a$12$PMDhJS9InPN5vMXXUcVXIugrwLi01r.yY8BKiSkkErmO5ps6KP/RS',
-                    '+49305550192', 'CLIENT', 'ACTIVE', 'WROCLAW', '2026-06-15'),
+                    '+49305550192', 'CLIENT', 'ACTIVE', 'WROCLAW', '2026-06-15T10:00:00Z', '2026-06-15T10:00:00Z', 0),
                    ('d8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'Alice Smith', 'alice@velocity.com',
                     '$2a$12$b7rFfC2KJ56zJSgsF.baA.0S7B8prHnzeC14CASWB9rrUd8p2.Yu2',
-                    '+442079460912', 'CLIENT', 'ACTIVE', 'WARSAW', '2026-07-01'),
+                    '+442079460912', 'CLIENT', 'ACTIVE', 'WARSAW', '2026-07-01T10:00:00Z', '2026-07-01T10:00:00Z', 0),
                    ('7c4b2a1f-8e9d-4f3a-bc12-9e8d7f6c5b4a', 'Dave Blocked', 'dave@velocity.com',
                     '$2a$12$K/4OXWmX2L3HP0cGy0pquO.h8lIaYT05ba86SglUc4fFdRbUvJpcm',
-                    '+33140050011', 'CLIENT', 'BLOCKED', 'POZNAN', '2026-05-01')
-                ON CONFLICT (id) DO NOTHING;
+                    '+33140050011', 'CLIENT', 'BLOCKED', 'POZNAN', '2026-05-01T10:00:00Z', '2026-05-01T10:00:00Z',
+                    0) ON CONFLICT (id) DO NOTHING;
 
             -- ══════════════════════════════════ BIKE MODELS ══════════════════════════════════
             INSERT INTO bike_models (id, name, category, description, speed, range, capacity)
@@ -32,8 +33,7 @@
                     100, 60),
                    ('7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 'Cargo King XL', 'HEAVY_DUTY',
                     '10 pizzas? No problem. Features insulated front box and heavy-duty rear rack.', 25, 60,
-                    100)
-                ON CONFLICT (id) DO NOTHING;
+                    100) ON CONFLICT (id) DO NOTHING;
 
             -- ══════════════════════════════════ BIKE INSTANCES ══════════════════════════════════
             INSERT INTO bike_instances (id, city, status, bike_model_id)
@@ -51,7 +51,8 @@
                 ('a1a1a1a1-1111-4111-8111-000000000010', 'WARSAW', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e'),
                 ('a1a1a1a1-1111-4111-8111-000000000011', 'WARSAW', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e'),
                 ('a1a1a1a1-1111-4111-8111-000000000012', 'WARSAW', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e'),
-                ('a1a1a1a1-1111-4111-8111-000000000013', 'WARSAW', 'MAINTENANCE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f'),
+                ('a1a1a1a1-1111-4111-8111-000000000013', 'WARSAW', 'MAINTENANCE',
+                 '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f'),
                 ('a1a1a1a1-1111-4111-8111-000000000014', 'WARSAW', 'LOST', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e'),
                 ('a1a1a1a1-1111-4111-8111-000000000015', 'WARSAW', 'RETIRED', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e'),
                 -- WROCLAW (12 Active, 2 Maintenance, 1 Retired)
@@ -67,7 +68,8 @@
                 ('b2b2b2b2-2222-4222-8222-000000000010', 'WROCLAW', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e'),
                 ('b2b2b2b2-2222-4222-8222-000000000011', 'WROCLAW', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e'),
                 ('b2b2b2b2-2222-4222-8222-000000000012', 'WROCLAW', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e'),
-                ('b2b2b2b2-2222-4222-8222-000000000113', 'WROCLAW', 'MAINTENANCE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f'),
+                ('b2b2b2b2-2222-4222-8222-000000000113', 'WROCLAW', 'MAINTENANCE',
+                 '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f'),
                 ('b2b2b2b2-2222-4222-8222-000000000114', 'WROCLAW', 'LOST', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e'),
                 ('b2b2b2b2-2222-4222-8222-000000000115', 'WROCLAW', 'RETIRED', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e'),
                 -- GDANSK (12 Active, 2 Maintenance, 1 Retired)
@@ -83,7 +85,8 @@
                 ('c3c3c3c3-3333-4333-8333-000000000010', 'GDANSK', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e'),
                 ('c3c3c3c3-3333-4333-8333-000000000011', 'GDANSK', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e'),
                 ('c3c3c3c3-3333-4333-8333-000000000012', 'GDANSK', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e'),
-                ('c3c3c3c3-3333-4333-8333-000000000113', 'GDANSK', 'MAINTENANCE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f'),
+                ('c3c3c3c3-3333-4333-8333-000000000113', 'GDANSK', 'MAINTENANCE',
+                 '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f'),
                 ('c3c3c3c3-3333-4333-8333-000000000114', 'GDANSK', 'LOST', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e'),
                 ('c3c3c3c3-3333-4333-8333-000000000115', 'GDANSK', 'RETIRED', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e'),
                 -- POZNAN (12 Active, 2 Maintenance, 1 Retired)
@@ -99,55 +102,87 @@
                 ('d4d4d4d4-4444-4444-8444-000000000010', 'POZNAN', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e'),
                 ('d4d4d4d4-4444-4444-8444-000000000011', 'POZNAN', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e'),
                 ('d4d4d4d4-4444-4444-8444-000000000012', 'POZNAN', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e'),
-                ('d4d4d4d4-4444-4444-8444-000000000113', 'POZNAN', 'MAINTENANCE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f'),
+                ('d4d4d4d4-4444-4444-8444-000000000113', 'POZNAN', 'MAINTENANCE',
+                 '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f'),
                 ('d4d4d4d4-4444-4444-8444-000000000114', 'POZNAN', 'LOST', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e'),
-                ('d4d4d4d4-4444-4444-8444-000000000115', 'POZNAN', 'RETIRED', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e')
-                ON CONFLICT (id) DO NOTHING;
+                ('d4d4d4d4-4444-4444-8444-000000000115', 'POZNAN', 'RETIRED',
+                 '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e') ON CONFLICT (id) DO NOTHING;
 
             -- ══════════════════════════════════ RESERVATIONS ══════════════════════════════════
             -- Pricing logic: 3-7 days (25 PLN), 8-14 days (20 PLN), 15-21 days (15 PLN).
             -- Bounded between 3 and 21 days maximum.
-            INSERT INTO reservations (id, start_date, end_date, total_cost, status, created_at, version, user_id, bike_instance_id)
+            INSERT INTO reservations (id, start_date, end_date, total_cost, status, created_at, version, user_id,
+                                      bike_instance_id)
             VALUES
                 -- June Historical (COMPLETED / CANCELLED)
-                (gen_random_uuid(), '2026-06-01', '2026-06-05', 100.00, 'COMPLETED', '2026-05-28 10:00:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000001'), -- 4d * 25
-                (gen_random_uuid(), '2026-06-06', '2026-06-16', 200.00, 'COMPLETED', '2026-06-01 08:30:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'a1a1a1a1-1111-4111-8111-000000000002'), -- 10d * 20
-                (gen_random_uuid(), '2026-06-10', '2026-06-25', 225.00, 'COMPLETED', '2026-06-05 12:00:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'b2b2b2b2-2222-4222-8222-000000000001'), -- 15d * 15
-                (gen_random_uuid(), '2026-06-18', '2026-06-21', 75.00,  'COMPLETED', '2026-06-10 14:15:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'c3c3c3c3-3333-4333-8333-000000000001'), -- 3d * 25
-                (gen_random_uuid(), '2026-06-20', '2026-07-11', 315.00, 'COMPLETED', '2026-06-12 09:00:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'd4d4d4d4-4444-4444-8444-000000000001'), -- 21d * 15
-                (gen_random_uuid(), '2026-06-25', '2026-06-30', 125.00, 'CANCELLED', '2026-06-20 11:00:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'a1a1a1a1-1111-4111-8111-000000000003'), -- 5d * 25
+                (gen_random_uuid(), '2026-06-01', '2026-06-05', 100.00, 'COMPLETED', '2026-05-28 10:00:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000001'), -- 4d * 25
+                (gen_random_uuid(), '2026-06-06', '2026-06-16', 200.00, 'COMPLETED', '2026-06-01 08:30:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'a1a1a1a1-1111-4111-8111-000000000002'), -- 10d * 20
+                (gen_random_uuid(), '2026-06-10', '2026-06-25', 225.00, 'COMPLETED', '2026-06-05 12:00:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'b2b2b2b2-2222-4222-8222-000000000001'), -- 15d * 15
+                (gen_random_uuid(), '2026-06-18', '2026-06-21', 75.00, 'COMPLETED', '2026-06-10 14:15:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'c3c3c3c3-3333-4333-8333-000000000001'), -- 3d * 25
+                (gen_random_uuid(), '2026-06-20', '2026-07-11', 315.00, 'COMPLETED', '2026-06-12 09:00:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'd4d4d4d4-4444-4444-8444-000000000001'), -- 21d * 15
+                (gen_random_uuid(), '2026-06-25', '2026-06-30', 125.00, 'CANCELLED', '2026-06-20 11:00:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'a1a1a1a1-1111-4111-8111-000000000003'), -- 5d * 25
 
                 -- July Historical (COMPLETED / CANCELLED)
-                (gen_random_uuid(), '2026-07-01', '2026-07-04', 75.00,  'COMPLETED', '2026-06-28 07:30:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000004'), -- 3d * 25
-                (gen_random_uuid(), '2026-07-05', '2026-07-14', 180.00, 'COMPLETED', '2026-07-01 10:20:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'b2b2b2b2-2222-4222-8222-000000000002'), -- 9d * 20
-                (gen_random_uuid(), '2026-07-10', '2026-07-17', 175.00, 'COMPLETED', '2026-07-05 16:00:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'c3c3c3c3-3333-4333-8333-000000000002'), -- 7d * 25
-                (gen_random_uuid(), '2026-07-12', '2026-07-15', 75.00,  'CANCELLED', '2026-07-06 09:10:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000002'), -- 3d * 25
-                (gen_random_uuid(), '2026-07-15', '2026-07-29', 280.00, 'COMPLETED', '2026-07-10 11:45:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000005'), -- 14d * 20
-                (gen_random_uuid(), '2026-07-18', '2026-07-24', 150.00, 'COMPLETED', '2026-07-12 14:30:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'b2b2b2b2-2222-4222-8222-000000000003'), -- 6d * 25
-                (gen_random_uuid(), '2026-07-22', '2026-07-25', 75.00,  'CANCELLED', '2026-07-15 08:00:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'c3c3c3c3-3333-4333-8333-000000000003'), -- 3d * 25
-                (gen_random_uuid(), '2026-07-25', '2026-08-10', 240.00, 'COMPLETED', '2026-07-20 17:15:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000003'), -- 16d * 15
-                (gen_random_uuid(), '2026-07-28', '2026-08-01', 100.00, 'COMPLETED', '2026-07-22 10:00:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000006'), -- 4d * 25
+                (gen_random_uuid(), '2026-07-01', '2026-07-04', 75.00, 'COMPLETED', '2026-06-28 07:30:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000004'), -- 3d * 25
+                (gen_random_uuid(), '2026-07-05', '2026-07-14', 180.00, 'COMPLETED', '2026-07-01 10:20:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'b2b2b2b2-2222-4222-8222-000000000002'), -- 9d * 20
+                (gen_random_uuid(), '2026-07-10', '2026-07-17', 175.00, 'COMPLETED', '2026-07-05 16:00:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'c3c3c3c3-3333-4333-8333-000000000002'), -- 7d * 25
+                (gen_random_uuid(), '2026-07-12', '2026-07-15', 75.00, 'CANCELLED', '2026-07-06 09:10:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000002'), -- 3d * 25
+                (gen_random_uuid(), '2026-07-15', '2026-07-29', 280.00, 'COMPLETED', '2026-07-10 11:45:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000005'), -- 14d * 20
+                (gen_random_uuid(), '2026-07-18', '2026-07-24', 150.00, 'COMPLETED', '2026-07-12 14:30:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'b2b2b2b2-2222-4222-8222-000000000003'), -- 6d * 25
+                (gen_random_uuid(), '2026-07-22', '2026-07-25', 75.00, 'CANCELLED', '2026-07-15 08:00:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'c3c3c3c3-3333-4333-8333-000000000003'), -- 3d * 25
+                (gen_random_uuid(), '2026-07-25', '2026-08-10', 240.00, 'COMPLETED', '2026-07-20 17:15:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000003'), -- 16d * 15
+                (gen_random_uuid(), '2026-07-28', '2026-08-01', 100.00, 'COMPLETED', '2026-07-22 10:00:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000006'), -- 4d * 25
 
                 -- August Historical (COMPLETED / CANCELLED)
-                (gen_random_uuid(), '2026-08-01', '2026-08-06', 125.00, 'COMPLETED', '2026-07-25 09:30:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'b2b2b2b2-2222-4222-8222-000000000004'), -- 5d * 25
-                (gen_random_uuid(), '2026-08-03', '2026-08-14', 220.00, 'COMPLETED', '2026-07-28 11:00:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'c3c3c3c3-3333-4333-8333-000000000004'), -- 11d * 20
-                (gen_random_uuid(), '2026-08-08', '2026-08-11', 75.00,  'COMPLETED', '2026-08-01 13:20:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000004'), -- 3d * 25
-                (gen_random_uuid(), '2026-08-12', '2026-08-17', 125.00, 'CANCELLED', '2026-08-05 08:45:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000007'), -- 5d * 25
-                (gen_random_uuid(), '2026-08-15', '2026-09-02', 270.00, 'COMPLETED', '2026-08-10 10:10:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'b2b2b2b2-2222-4222-8222-000000000005'), -- 18d * 15
-                (gen_random_uuid(), '2026-08-18', '2026-08-25', 175.00, 'COMPLETED', '2026-08-12 16:30:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'c3c3c3c3-3333-4333-8333-000000000005'), -- 7d * 25
-                (gen_random_uuid(), '2026-08-22', '2026-08-25', 75.00,  'CANCELLED', '2026-08-15 09:00:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000005'), -- 3d * 25
-                (gen_random_uuid(), '2026-08-25', '2026-09-04', 200.00, 'COMPLETED', '2026-08-20 11:20:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000008'), -- 10d * 20
-                (gen_random_uuid(), '2026-08-28', '2026-09-17', 300.00, 'COMPLETED', '2026-08-22 14:00:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'b2b2b2b2-2222-4222-8222-000000000006'), -- 20d * 15
+                (gen_random_uuid(), '2026-08-01', '2026-08-06', 125.00, 'COMPLETED', '2026-07-25 09:30:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'b2b2b2b2-2222-4222-8222-000000000004'), -- 5d * 25
+                (gen_random_uuid(), '2026-08-03', '2026-08-14', 220.00, 'COMPLETED', '2026-07-28 11:00:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'c3c3c3c3-3333-4333-8333-000000000004'), -- 11d * 20
+                (gen_random_uuid(), '2026-08-08', '2026-08-11', 75.00, 'COMPLETED', '2026-08-01 13:20:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000004'), -- 3d * 25
+                (gen_random_uuid(), '2026-08-12', '2026-08-17', 125.00, 'CANCELLED', '2026-08-05 08:45:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000007'), -- 5d * 25
+                (gen_random_uuid(), '2026-08-15', '2026-09-02', 270.00, 'COMPLETED', '2026-08-10 10:10:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'b2b2b2b2-2222-4222-8222-000000000005'), -- 18d * 15
+                (gen_random_uuid(), '2026-08-18', '2026-08-25', 175.00, 'COMPLETED', '2026-08-12 16:30:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'c3c3c3c3-3333-4333-8333-000000000005'), -- 7d * 25
+                (gen_random_uuid(), '2026-08-22', '2026-08-25', 75.00, 'CANCELLED', '2026-08-15 09:00:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000005'), -- 3d * 25
+                (gen_random_uuid(), '2026-08-25', '2026-09-04', 200.00, 'COMPLETED', '2026-08-20 11:20:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000008'), -- 10d * 20
+                (gen_random_uuid(), '2026-08-28', '2026-09-17', 300.00, 'COMPLETED', '2026-08-22 14:00:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'b2b2b2b2-2222-4222-8222-000000000006'), -- 20d * 15
 
                 -- Recent/Current/Future (CONFIRMED / PENDING) - Dates after Sept 4, 2026
-                (gen_random_uuid(), '2026-09-05', '2026-09-10', 125.00, 'CONFIRMED', '2026-09-01 08:00:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'c3c3c3c3-3333-4333-8333-000000000006'), -- 5d * 25
-                (gen_random_uuid(), '2026-09-10', '2026-09-18', 160.00, 'CONFIRMED', '2026-09-02 10:30:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000006'), -- 8d * 20
-                (gen_random_uuid(), '2026-09-15', '2026-10-05', 300.00, 'CONFIRMED', '2026-09-03 14:15:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000009'), -- 20d * 15
-                (gen_random_uuid(), '2026-09-22', '2026-09-25', 75.00,  'CONFIRMED', '2026-09-04 09:00:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'b2b2b2b2-2222-4222-8222-000000000007'), -- 3d * 25
-                (gen_random_uuid(), '2026-10-01', '2026-10-15', 280.00, 'CONFIRMED', '2026-09-04 10:00:00', 0, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'c3c3c3c3-3333-4333-8333-000000000007'), -- 14d * 20
+                (gen_random_uuid(), '2026-09-05', '2026-09-10', 125.00, 'CONFIRMED', '2026-09-01 08:00:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'c3c3c3c3-3333-4333-8333-000000000006'), -- 5d * 25
+                (gen_random_uuid(), '2026-09-10', '2026-09-18', 160.00, 'CONFIRMED', '2026-09-02 10:30:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000006'), -- 8d * 20
+                (gen_random_uuid(), '2026-09-15', '2026-10-05', 300.00, 'CONFIRMED', '2026-09-03 14:15:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'a1a1a1a1-1111-4111-8111-000000000009'), -- 20d * 15
+                (gen_random_uuid(), '2026-09-22', '2026-09-25', 75.00, 'CONFIRMED', '2026-09-04 09:00:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'b2b2b2b2-2222-4222-8222-000000000007'), -- 3d * 25
+                (gen_random_uuid(), '2026-10-01', '2026-10-15', 280.00, 'CONFIRMED', '2026-09-04 10:00:00', 0,
+                 '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'c3c3c3c3-3333-4333-8333-000000000007'), -- 14d * 20
 
                 -- The 1 PENDING Reservation (keeps start in future so scheduler can cancel stale)
-                (gen_random_uuid(), '2026-09-09', '2026-09-12', 75.00,  'PENDING',   '2026-09-07 08:30:00', 0, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000007')  -- 3d * 25
+                (gen_random_uuid(), '2026-12-09', '2026-12-12', 75.00, 'PENDING', '2026-09-07 08:30:00', 0,
+                 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'd4d4d4d4-4444-4444-8444-000000000007')  -- 3d * 25
                 ON CONFLICT (id) DO NOTHING;
         </sql>
     </changeSet>
