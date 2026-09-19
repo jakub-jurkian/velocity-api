@@ -16,6 +16,7 @@ import com.velocity.api.user.dto.AdminUserUpdateRequest;
 import com.velocity.api.user.dto.BikeInstanceResponse;
 import com.velocity.api.user.exception.CannotDemoteSelfException;
 import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
+import com.velocity.api.user.exception.PhoneAlreadyRegisteredException;
 import com.velocity.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -68,8 +69,12 @@ public class AdminUserService {
         City city = request.city().isPresent() ? request.city().get() : user.getCity();
         String email = request.email().isPresent() ? request.email().get() : user.getEmail();
 
-        if (!email.equalsIgnoreCase(user.getEmail()) && userRepository.findByEmail(email).isPresent()) {
-            throw new EmailAlreadyRegisteredException("This email address is already in use.");
+        if (userRepository.isEmailTakenByAnotherUser(email, id)) {
+            throw new EmailAlreadyRegisteredException("An account with this email already exists.");
+        }
+
+        if (userRepository.isPhoneTakenByAnotherUser(phone, id)) {
+            throw new PhoneAlreadyRegisteredException("An account with this phone number already exists.");
         }
 
         user.updateProfileByAdmin(fullName, phone, city, email);

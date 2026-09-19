@@ -11,6 +11,7 @@ import com.velocity.api.auth.dto.UserLoginRequest;
 import com.velocity.api.auth.dto.UserLoginResponse;
 import com.velocity.api.auth.dto.UserProfileResponse;
 import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
+import com.velocity.api.user.exception.PhoneAlreadyRegisteredException;
 import com.velocity.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,10 @@ public class AuthService {
     public UserRegistrationResponse register(UserRegistrationRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyRegisteredException("This email address is already in use.");
+        }
+
+        if (userRepository.existsByPhone(request.phone())) {
+            throw new PhoneAlreadyRegisteredException("An account with this phone number already exists.");
         }
 
         String encodedPassword = passwordEncoder.encode(request.password());

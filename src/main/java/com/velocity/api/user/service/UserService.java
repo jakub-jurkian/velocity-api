@@ -4,6 +4,7 @@ import com.velocity.api.common.City;
 import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.user.User;
 import com.velocity.api.auth.dto.UserProfileUpdateRequest;
+import com.velocity.api.user.exception.PhoneAlreadyRegisteredException;
 import com.velocity.api.user.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,10 @@ public class UserService {
         String fullName = request.fullName().isPresent() ? request.fullName().get() : user.getFullName();
         String phone = request.phone().isPresent() ? request.phone().get() : user.getPhone();
         City city = request.city().isPresent() ? request.city().get() : user.getCity();
+
+        if (userRepository.isPhoneTakenByAnotherUser(phone, userId)) {
+            throw new PhoneAlreadyRegisteredException("An account with this phone number already exists.");
+        }
 
         user.updateProfile(fullName, phone, city);
     }
