@@ -2,6 +2,7 @@ package com.velocity.api.user;
 
 import com.velocity.api.common.City;
 import com.velocity.api.common.exception.DomainValidationException;
+import com.velocity.api.user.exception.InvalidUserStateException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -50,7 +51,7 @@ public class User {
     @LastModifiedDate
     private Instant lastModified;
     @Version
-    Long version;
+    private Long version;
 
     // The intent-revealing factory method
     public static User registerClient(String email, String passwordHash, String fullName, String phone, City city) {
@@ -78,11 +79,17 @@ public class User {
     }
 
     public void block() {
-        if (this.status == UserStatus.ACTIVE) this.status = UserStatus.BLOCKED;
+        if (this.status == UserStatus.BLOCKED) {
+            throw new InvalidUserStateException("User is already blocked.");
+        }
+        this.status = UserStatus.BLOCKED;
     }
 
     public void unblock() {
-        if (this.status == UserStatus.BLOCKED) this.status = UserStatus.ACTIVE;
+        if (this.status == UserStatus.ACTIVE) {
+            throw new InvalidUserStateException("User is already unblocked.");
+        }
+        this.status = UserStatus.ACTIVE;
     }
 
     private User(String email, String passwordHash, String fullName, String phone, UserRole role, City city) {
