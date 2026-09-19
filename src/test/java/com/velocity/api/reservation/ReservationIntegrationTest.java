@@ -140,7 +140,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    public void confirmReservation_UnauthorizedUser_Forbidden() throws Exception {
+    public void confirmReservation_reservationOfAnotherUser_returnsNotFound() throws Exception {
         when(clock.instant()).thenReturn(Instant.parse("2026-09-01T10:00:00Z"));
         when(clock.getZone()).thenReturn(ZoneId.of("UTC"));
         User primaryUser = testDataFactory.createAndSaveDefaultUser();
@@ -158,8 +158,9 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(post("/api/v1/reservations/%s/confirm".formatted(reservationId))
                         .with(asUser(String.valueOf(otherUserId), "CLIENT"))
                 )
-                // Assert
-                .andExpect(status().isForbidden());
+                // Assert: a reservation the caller does not own is indistinguishable from
+                // one that does not exist, so the row's existence is never confirmed.
+                .andExpect(status().isNotFound());
 
         Reservation freshReservation = reservationRepository.findById(reservationId).orElseThrow(() ->
                 new ResourceNotFoundException("Reservation not found."));

@@ -5,7 +5,6 @@ import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.reservation.service.ReservationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -40,7 +39,7 @@ public class ReservationLifecycleScheduler {
         }
     }
 
-    @Scheduled(cron = "${scheduling.reservation.completion-cron:0 0 1 * * ?}") // for testing
+    @Scheduled(cron = "${scheduling.reservation.completion-cron:0 0 1 * * ?}")
     public void completePastDueConfirmedReservations() {
 
         List<UUID> pastDueConfirmedReservationIds = reservationRepository.findPastDueConfirmedReservationsIds(ReservationStatus.CONFIRMED, LocalDate.now(clock));

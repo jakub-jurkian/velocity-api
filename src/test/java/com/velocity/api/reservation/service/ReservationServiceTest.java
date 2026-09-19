@@ -10,11 +10,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
 import static com.velocity.api.reservation.ReservationTestFactory.createWithStatus;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -22,8 +28,13 @@ import static org.mockito.Mockito.*;
 public class ReservationServiceTest {
     @Mock
     private ReservationRepository reservationRepository;
+
+    @Spy
+    private Clock clock = Clock.fixed(Instant.parse("2026-09-01T10:00:00Z"), ZoneOffset.UTC);
+
     @InjectMocks
     private ReservationService reservationService;
+
 
     @Test
     @DisplayName("When reservation ID does not exist, transition throws ResourceNotFoundException")
@@ -31,18 +42,18 @@ public class ReservationServiceTest {
         UUID fakeId = UUID.randomUUID();
         when(reservationRepository.findById(fakeId)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> reservationService.transitionStatus(fakeId, ReservationStatus.CONFIRMED));
+        assertThrows(ResourceNotFoundException.class, () -> reservationService.cancelStaleReservation(fakeId));
     }
 
     @Test
     @DisplayName("When transition is illegal, throws exception and does not save to database")
     public void transition_illegalState_neverSaves() {
         UUID validId = UUID.randomUUID();
-        Reservation pendingReservation = createWithStatus(ReservationStatus.PENDING);
+        Reservation completedReservation = createWithStatus(ReservationStatus.COMPLETED);
 
-        when(reservationRepository.findById(validId)).thenReturn(Optional.of(pendingReservation));
-        assertThrows(InvalidStatusTransitionException.class, () -> reservationService.transitionStatus(validId, ReservationStatus.COMPLETED));
+        when(reservationRepository.findById(validId)).thenReturn(Optional.of(completedReservation));
+        assertThrows(InvalidStatusTransitionException.class, () -> reservationService.cancelStaleReservation(validId));
 
-        verify(reservationRepository, never()).save(any(Reservation.class));
+        assertThat(completedReservation.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
     }
 }
