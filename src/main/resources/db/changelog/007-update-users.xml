@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <changeSet id="007-update-users-auditing" author="velocity-engineer">
+    <changeSet author="jakub-jurkian" id="007-update-users-auditing">
 
         <!-- auditing and versioning columns -->
         <addColumn tableName="users">

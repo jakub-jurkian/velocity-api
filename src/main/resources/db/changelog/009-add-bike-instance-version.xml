@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <changeSet id="009-add-bike-instance-version" author="velocity-engineer">
+    <changeSet author="jakub-jurkian" id="009-add-bike-instance-version">
         <!-- versioning column -->
         <addColumn tableName="bike_instances">
             <column name="version" type="BIGINT" defaultValue="0">

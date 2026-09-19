@@ -4,7 +4,7 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
 
-    <changeSet author="jakub-jurkian" id="1782985087770-3">
+    <changeSet author="jakub-jurkian" id="004-create-reservations">
         <createTable tableName="reservations">
             <column name="id" type="UUID">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="reservationsPK"/>
