@@ -30,7 +30,6 @@ import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static reactor.core.publisher.Mono.when;
 
 @DataJpaTest
 @Import(ClockConfig.class)
@@ -70,7 +69,6 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
         entityManager.persist(instance);
 
         // Target Data (Reservations)
-        // res1: Month 9 (September 2026) -> Expected to be counted
         Reservation res1 = Reservation.book(
                 user,
                 instance,
@@ -83,7 +81,6 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
         entityManager.persist(res1);
 
 
-        // res2: Month 9 (September 2026) -> Expected to be summed with res1 (125+125=250)
         Reservation res2 = Reservation.book(
                 user,
                 instance,
@@ -95,17 +92,26 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
         res2.transitionTo(ReservationStatus.CONFIRMED, LocalDate.now(clock));
         entityManager.persist(res2);
 
-        // res3: Month 10 (October 2026) -> Expected to be ignored entirely
         Reservation res3 = Reservation.book(
                 user,
                 instance,
-                LocalDate.of(2026, 10, 1),
-                LocalDate.of(2026, 10, 6),
+                LocalDate.of(2026, 9, 25),
+                LocalDate.of(2026, 9, 30),
                 LocalDate.now(clock),
                 new BigDecimal("125.00")
         );
-        res3.transitionTo(ReservationStatus.CANCELLED, LocalDate.now(clock));
         entityManager.persist(res3);
+
+        Reservation res4 = Reservation.book(
+                user,
+                instance,
+                LocalDate.of(2026, 10, 5),
+                LocalDate.of(2026, 10, 10),
+                LocalDate.now(clock),
+                new BigDecimal("125.00")
+        );
+        res4.transitionTo(ReservationStatus.CANCELLED, LocalDate.now(clock));
+        entityManager.persist(res4);
 
         entityManager.flush(); // Fire Inserts to PostgreSQL
         entityManager.clear(); // Wipe the cache to guarantee real DB queries
@@ -121,7 +127,7 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
     }
 
     @Test
-    public void findTotalRevenue_WithMixedStatuses_SumsOnlyNonCancelled() {
+    public void findTotalRevenue_ExcludesPendingAndCancelled_SumsConfirmedAndCompleted() {
         BigDecimal result = reservationRepository.findTotalRevenue();
         assertThat(result).isEqualByComparingTo(BigDecimal.valueOf(250));
     }
@@ -138,8 +144,9 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
 
     @Test
     public void countActiveRentals_WithConfirmedReservations_ReturnsCorrectCount() {
-        long result = reservationRepository.countActiveRentals();
-        assertThat(result).isEqualTo(2L);
+        Mockito.when(clock.instant()).thenReturn(Instant.parse("2026-09-07T10:00:00Z"));
+        long result = reservationRepository.countActiveRentals(LocalDate.now(clock));
+        assertThat(result).isEqualTo(1L);
     }
 
     @Test
@@ -149,6 +156,6 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
         assertThat(result).hasSize(1);
         FleetPopularityProjection popularity = result.getFirst();
         assertThat(popularity.getModelName()).isEqualTo("Urban Cruiser");
-        assertThat(popularity.getCount()).isEqualTo(2L);
+        assertThat(popularity.getCount()).isEqualTo(3L);
     }
 }

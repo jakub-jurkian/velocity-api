@@ -42,8 +42,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("SELECT COALESCE(SUM(r.totalCost), 0) FROM Reservation r WHERE r.status IN ('CONFIRMED', 'COMPLETED')")
     BigDecimal findTotalRevenue();
 
-    @Query("SELECT COUNT(r.id) FROM Reservation r WHERE r.status = 'CONFIRMED'")
-    long countActiveRentals();
+    @Query("SELECT COUNT(r.id) FROM Reservation r WHERE r.status = 'CONFIRMED' AND r.startDate <= :today AND r.endDate > :today")
+    long countActiveRentals(@Param("today") LocalDate today);
 
     @Query("""
              SELECT YEAR(r.startDate) AS year, MONTH(r.startDate) AS month, SUM(r.totalCost) AS revenue FROM Reservation r WHERE r.status IN ('CONFIRMED', 'COMPLETED') GROUP BY YEAR(r.startDate), MONTH(r.startDate) ORDER BY YEAR(r.startDate) ASC, MONTH(r.startDate) ASC
