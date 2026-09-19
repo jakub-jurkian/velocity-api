@@ -8,13 +8,18 @@ spring:
     open-in-view: false
     properties:
       hibernate:
-        jdbc.batch_size: 50
         order_updates: true
         ddl-auto: validate
+        jdbc:
+          batch_size: 50
+          time_zone: UTC
   data:
     web:
       pageable:
         max-page-size: 50
+    redis:
+      repositories:
+        enabled: false
   web:
     locale: en
 
