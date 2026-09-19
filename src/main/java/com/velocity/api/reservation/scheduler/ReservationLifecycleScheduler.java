@@ -5,10 +5,12 @@ import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.reservation.service.ReservationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -21,13 +23,12 @@ import java.util.UUID;
 public class ReservationLifecycleScheduler {
     private final ReservationRepository reservationRepository;
     private final ReservationService reservationService;
+    private final Clock clock;
 
-    // @Scheduled(fixedRate = 60000)
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRateString = "${scheduling.pending-cadence:PT5M}")
     public void cancelStalePendingReservations() {
-        Instant cutoff = Instant.now().minus(30, ChronoUnit.MINUTES);
+        Instant cutoff = Instant.now(clock).minus(30, ChronoUnit.MINUTES);
         List<UUID> stalePendingReservationIds = reservationRepository.findStalePendingReservationsIds(ReservationStatus.PENDING, cutoff);
-
         for (UUID id : stalePendingReservationIds) {
             try {
                 reservationService.cancelStaleReservation(id);
@@ -39,11 +40,10 @@ public class ReservationLifecycleScheduler {
         }
     }
 
-    // @Scheduled(cron = "0 1 0 * * *")
-    @Scheduled(fixedRate = 10000) // for testing
+    @Scheduled(cron = "${scheduling.reservation.completion-cron:0 0 1 * * ?}") // for testing
     public void completePastDueConfirmedReservations() {
 
-        List<UUID> pastDueConfirmedReservationIds = reservationRepository.findPastDueConfirmedReservationsIds(ReservationStatus.CONFIRMED, LocalDate.now());
+        List<UUID> pastDueConfirmedReservationIds = reservationRepository.findPastDueConfirmedReservationsIds(ReservationStatus.CONFIRMED, LocalDate.now(clock));
 
         for (UUID id : pastDueConfirmedReservationIds) {
             try {

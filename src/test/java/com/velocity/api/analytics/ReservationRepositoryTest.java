@@ -14,18 +14,23 @@ import com.velocity.api.reservation.repository.projection.RevenueByMonthProjecti
 import com.velocity.api.user.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Mono.when;
 
 @DataJpaTest
 @Import(ClockConfig.class)
@@ -37,11 +42,13 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
     @Autowired
     private TestEntityManager entityManager;
 
-    @Autowired
+    @MockitoBean
     private Clock clock;
 
     @BeforeEach
     public void setUp() {
+        Mockito.when(clock.instant()).thenReturn(Instant.parse("2026-09-01T10:00:00Z"));
+        Mockito.when(clock.getZone()).thenReturn(ZoneId.of("UTC"));
         // Prerequisites
         User user = User.registerClient("testuser@velocity.com", "hashed_pw", "Test", "+48000500000", City.WARSAW);
         entityManager.persist(user);
@@ -67,8 +74,9 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
         Reservation res1 = Reservation.book(
                 user,
                 instance,
-                LocalDate.of(2026, 9, 1),
-                LocalDate.of(2026, 9, 6),
+                LocalDate.of(2026, 9, 5),
+                LocalDate.of(2026, 9, 10),
+                LocalDate.now(clock),
                 new BigDecimal("125.00")
         );
         res1.transitionTo(ReservationStatus.CONFIRMED, LocalDate.now(clock));
@@ -81,6 +89,7 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
                 instance,
                 LocalDate.of(2026, 9, 15),
                 LocalDate.of(2026, 9, 20),
+                LocalDate.now(clock),
                 new BigDecimal("125.00")
         );
         res2.transitionTo(ReservationStatus.CONFIRMED, LocalDate.now(clock));
@@ -92,6 +101,7 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
                 instance,
                 LocalDate.of(2026, 10, 1),
                 LocalDate.of(2026, 10, 6),
+                LocalDate.now(clock),
                 new BigDecimal("125.00")
         );
         res3.transitionTo(ReservationStatus.CANCELLED, LocalDate.now(clock));

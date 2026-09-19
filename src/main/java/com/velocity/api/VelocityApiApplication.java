@@ -5,9 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@EnableScheduling
 @SpringBootApplication
-@EnableJpaAuditing
+@EnableJpaAuditing(dateTimeProviderRef = "dateTimeProvider")
 public class VelocityApiApplication {
 
 	static void main(String[] args) {

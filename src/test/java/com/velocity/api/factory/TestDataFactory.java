@@ -64,12 +64,13 @@ public class TestDataFactory {
         return bikeInstanceRepository.save(testBike);
     }
 
-    public Reservation createAndSaveReservation(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate) {
+    public Reservation createAndSaveReservation(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, LocalDate currentDate) {
         Reservation normalReservation = Reservation.book(
                 user,
                 bikeInstance,
                 startDate,
                 endDate,
+                currentDate,
                 BigDecimal.ONE
         );
         return reservationRepository.save(normalReservation);
