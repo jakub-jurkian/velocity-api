@@ -1,6 +1,7 @@
 package com.velocity.api.reservation;
 
 import com.velocity.api.bike.BikeInstance;
+import com.velocity.api.common.exception.DomainValidationException;
 import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
 import com.velocity.api.reservation.exception.LateCancelException;
 import com.velocity.api.user.User;
@@ -75,9 +76,8 @@ public class Reservation {
 
     private Reservation(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, LocalDate currentDate, BigDecimal totalCost) {
         if (!startDate.isAfter(currentDate)) {
-            throw new IllegalArgumentException("Start date cannot be in past or present.");
+            throw new DomainValidationException("Start date cannot be in past or present.");
         }
-        validateTotalCost(totalCost);
         this.user = requireNonNull(user, "User");
         this.bikeInstance = requireNonNull(bikeInstance, "Bike instance");
         this.startDate = requireNonNull(startDate, "Start date");
@@ -85,21 +85,23 @@ public class Reservation {
         this.totalCost = requireNonNull(totalCost, "Total cost");
         this.status = ReservationStatus.PENDING;
 
+        validateTotalCost(totalCost);
+
         long days = ChronoUnit.DAYS.between(startDate, endDate);
         if (days < 3 || days > 21) {
-            throw new IllegalArgumentException("Amount of days must be between 3 and 21.");
+            throw new DomainValidationException("Amount of days must be between 3 and 21.");
         }
     }
 
     private <T> T requireNonNull(T value, String fieldName) {
         if (value == null) {
-            throw new IllegalArgumentException(fieldName + " is required.");
+            throw new DomainValidationException(fieldName + " is required.");
         }
         return value;
     }
 
     private void validateTotalCost(BigDecimal totalCost) {
         if (totalCost.compareTo(BigDecimal.ZERO) <= 0)
-            throw new IllegalArgumentException("Total cost must be greater than zero.");
+            throw new DomainValidationException("Total cost must be greater than zero.");
     }
 }

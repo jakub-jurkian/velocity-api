@@ -2,6 +2,7 @@ package com.velocity.api.user.Service;
 
 import com.velocity.api.auth.service.AuthService;
 import com.velocity.api.common.City;
+import com.velocity.api.common.exception.DomainValidationException;
 import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.user.User;
 import com.velocity.api.auth.dto.UserProfileUpdateRequest;
@@ -86,7 +87,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void updateProfile_fieldExplicitlyNull_throwsIllegalArgumentException() {
+    public void updateProfile_fieldExplicitlyNull_throwsDomainValidationException() {
         User user = createStandardClient();
         when(userRepository.findById(any())).thenReturn(Optional.of(user));
 
@@ -97,7 +98,7 @@ public class UserServiceTest {
                 JsonNullable.undefined()
         );
 
-        assertThatThrownBy(() -> userService.updateProfile(user.getId(), request)).isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> userService.updateProfile(user.getId(), request)).isInstanceOf(DomainValidationException.class)
                 .hasMessage("Phone number is required");
     }
 

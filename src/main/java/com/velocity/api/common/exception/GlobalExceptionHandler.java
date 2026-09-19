@@ -204,14 +204,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem;
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ProblemDetail handleIllegalArgumentException(IllegalArgumentException ex) {
-        log.warn("Invalid arguments: {}", ex.getMessage());
+    @ExceptionHandler(DomainValidationException.class)
+    public ProblemDetail handleDomainValidationException(DomainValidationException ex) {
+        log.warn("Invalid argument: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST,
+                HttpStatus.UNPROCESSABLE_CONTENT,
                 ex.getMessage()
         );
-        problem.setTitle("Invalid arguments");
+        problem.setTitle("Invalid argument");
         return problem;
     }
 
@@ -250,7 +250,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ProblemDetail handleLateCancellationException(LateCancelException ex) {
         log.warn("Late cancellation attempt blocked: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST,
+                HttpStatus.UNPROCESSABLE_CONTENT,
                 ex.getMessage()
         );
         problem.setTitle("Late Cancellation Policy Violation");
