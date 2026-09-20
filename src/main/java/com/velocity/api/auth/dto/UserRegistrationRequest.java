@@ -11,6 +11,12 @@ public record UserRegistrationRequest(
         String email,
         @NotBlank(message = "Password is required")
         @Size(min = 8, max = 64, message = "Password must be between 8 and 64 characters")
+        // Composition rule enforced server-side; validators.ts mirrors it for the client.
+        // Length is left to @Size so the two messages stay independently readable.
+        @Pattern(
+                regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).*$",
+                message = "Password must contain an uppercase letter, a lowercase letter, a digit and a special character"
+        )
         String password,
         @NotBlank(message = "Full name is required")
         @Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")

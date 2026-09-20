@@ -19,8 +19,11 @@ spring:
       pageable:
         max-page-size: 50
     redis:
+      timeout: 200ms
+      connect-timeout: 200ms
       repositories:
         enabled: false
+
   web:
     locale: en
 

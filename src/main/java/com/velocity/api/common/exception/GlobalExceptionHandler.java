@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.CannotAcquireLockException;
-import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -126,31 +125,34 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem;
     }
 
-    /**
-     * Catches database-level integrity violations, inspecting the root cause
-     * to provide specific conflict messages for reservation overlaps or unique constraints.
-     * Maps to HTTP 409 Conflict.
-     *
-     * @param ex the data integrity violation exception
-     * @return a ProblemDetail object explaining the specific conflict
-     */
-    @ExceptionHandler({DataIntegrityViolationException.class, CannotAcquireLockException.class})
-    public ProblemDetail handleDataIntegrityViolationException(DataAccessException ex) {
-        log.warn("Database integrity violation occurred: {}", ex.getMessage());
+
+    private record ErrorMapping(HttpStatus status, String title, String detail) {
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
         String constraint = extractConstraintName(ex);
 
-        var mapped = switch (constraint == null ? "" : constraint.toLowerCase()) {
-            case "no_overlapping_active_reservations" ->
-                    Map.entry("Bike Not Available", "This bike is already reserved for the selected dates.");
-            case "uc_usersemail_col" -> Map.entry("Duplicate Record", "An account with this email already exists.");
-            case "uc_usersphone_col" ->
-                    Map.entry("Duplicate Record", "An account with this phone number already exists.");
-            default -> Map.entry("Resource Conflict", "A database conflict occurred.");
+        ErrorMapping mapped = switch (constraint == null ? "" : constraint.toLowerCase()) {
+            case "no_overlapping_active_reservations" -> new ErrorMapping(HttpStatus.CONFLICT,
+                    "Bike Not Available", "This bike is already reserved for the selected dates.");
+            case "uc_usersemail_col" -> new ErrorMapping(HttpStatus.CONFLICT,
+                    "Duplicate Record", "An account with this email already exists.");
+            case "uc_usersphone_col" -> new ErrorMapping(HttpStatus.CONFLICT,
+                    "Duplicate Record", "An account with this phone number already exists.");
+            default -> null;
         };
 
+        if (mapped == null) {
+            log.error("Unmapped data integrity violation (constraint={})", constraint, ex);
+            mapped = new ErrorMapping(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal Server Error", "An unexpected internal server error occurred.");
+        } else {
+            log.warn("Database constraint violated: {}", constraint);
+        }
 
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, mapped.getValue());
-        problem.setTitle(mapped.getKey());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(mapped.status(), mapped.detail());
+        problem.setTitle(mapped.title());
         problem.setType(URI.create("about:blank"));
         return problem;
     }
@@ -158,8 +160,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private String extractConstraintName(Throwable ex) {
         Throwable cause = ex;
         while (cause != null) {
-            if (cause instanceof org.hibernate.exception.ConstraintViolationException cve) {
+            if (cause instanceof org.hibernate.exception.ConstraintViolationException cve
+                    && cve.getConstraintName() != null) {
                 return cve.getConstraintName();
+            }
+            // Hibernate does not extract names for exclusion violations (SQLState 23P01)
+            if (cause instanceof java.sql.SQLException sqle
+                    && "23P01".equals(sqle.getSQLState())) {
+                return "no_overlapping_active_reservations";
             }
             cause = cause.getCause();
         }
@@ -182,6 +190,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 ex.getMessage()
         );
         problem.setTitle("Invalid State Transition");
+        return problem;
+    }
+
+    @ExceptionHandler(CannotAcquireLockException.class)
+    public ProblemDetail handleCannotAcquireLockException(CannotAcquireLockException ex) {
+        log.warn("Lock acquisition failed: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+                "The resource is busy. Please try again.");
+        problem.setTitle("Modification conflict");
         return problem;
     }
 
@@ -239,7 +256,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("Bad credentials: {}", ex.getMessage());
         return ProblemDetail.forStatusAndDetail(
                 HttpStatus.UNAUTHORIZED,
-                ex.getMessage()
+                "Incorrect email or password."
         );
     }
 
