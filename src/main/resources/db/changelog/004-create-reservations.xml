@@ -35,12 +35,12 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="jakub-jurkian" id="1782985087770-9">
+    <changeSet author="jakub-jurkian" id="004-reservations-fk-add">
         <addForeignKeyConstraint baseColumnNames="user_id" baseTableName="reservations"
                                  constraintName="fk_user_on_reservation" deferrable="false" initiallyDeferred="false"
                                  referencedColumnNames="id" referencedTableName="users" validate="true"/>
     </changeSet>
-    <changeSet author="jakub-jurkian" id="1782985087770-10">
+    <changeSet author="jakub-jurkian" id="004-bike_instances-fk-add">
         <addForeignKeyConstraint baseColumnNames="bike_instance_id" baseTableName="reservations"
                                  constraintName="fk_bike_instance_on_reservation" deferrable="false"
                                  initiallyDeferred="false" referencedColumnNames="id"

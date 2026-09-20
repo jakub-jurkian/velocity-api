@@ -6,23 +6,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.HashMap;
-import java.util.UUID;
+import java.time.Clock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JwtServiceTest {
     private JwtService jwtService;
+    private static final String SECRET = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
+
 
     @BeforeEach
     public void setUp() {
-        jwtService = new JwtService();
-
-        ReflectionTestUtils.setField(jwtService, "secretKey", "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970");
-        ReflectionTestUtils.setField(jwtService, "jwtExpiration", 86400000L);
+        jwtService = new JwtService(SECRET, 86400000L, Clock.systemUTC());
     }
 
     // prove generated token contains exact data we asked it to store
@@ -33,56 +30,49 @@ public class JwtServiceTest {
                 .username("test@test.com")
                 .password("hash")
                 .build();
-        HashMap<String, Object> extraClaims = new HashMap<>();
-        String randomUUIDString = UUID.randomUUID().toString();
-        extraClaims.put("id", randomUUIDString);
-        extraClaims.put("role", "CLIENT");
         // Act
-        String generatedToken = jwtService.generateToken(extraClaims, userDetails);
-        String username = jwtService.extractUsername(generatedToken);
-        String extractedId = jwtService.extractClaim(generatedToken, "id", String.class);
-        String extractedRole = jwtService.extractClaim(generatedToken, "role", String.class);
+        String generatedToken = jwtService.generateToken(userDetails);
+        String username = jwtService.parseClaims(generatedToken).getSubject();
 
         // Assert
         assertThat(username).isEqualTo("test@test.com");
-        assertThat(extractedId).isEqualTo(randomUUIDString);
-        assertThat(extractedRole).isEqualTo("CLIENT");
     }
 
     @Test
-    public void generateToken_expiredToken_throwsExpiredJwtException() {
-        ReflectionTestUtils.setField(jwtService, "jwtExpiration", -1000L);
+    public void extractUsername_expiredToken_throwsExpiredJwtException() {
+        // Arrange
+        JwtService expiringService = new JwtService(SECRET, -1000L, Clock.systemUTC());
+        UserDetails userDetails = User.builder()
+                .username("test@test.com")
+                .password("hash")
+                .build();
+        String generatedToken = expiringService.generateToken(userDetails);
+        // Act & Assert
+        assertThrows(ExpiredJwtException.class, () -> expiringService.parseClaims(generatedToken).getSubject());
+    }
 
+    @Test
+    public void extractUsername_signatureForgery_throwsSignatureException() {
         // Arrange
         UserDetails userDetails = User.builder()
                 .username("test@test.com")
                 .password("hash")
                 .build();
-        HashMap<String, Object> extraClaims = new HashMap<>();
-        String randomUUIDString = UUID.randomUUID().toString();
-        extraClaims.put("id", randomUUIDString);
-        extraClaims.put("role", "CLIENT");
-        String generatedToken = jwtService.generateToken(extraClaims, userDetails);
+        String generatedToken = jwtService.generateToken(userDetails);
+
+        JwtService hackerService = new JwtService("303E635266556A586E3272357538782F413F4428472B4B6250645367566B5970", 86400000L, Clock.systemUTC());
         // Act & Assert
-        assertThrows(ExpiredJwtException.class, () -> jwtService.extractUsername(generatedToken));
+        assertThrows(SignatureException.class, () -> hackerService.parseClaims(generatedToken).getSubject());
     }
 
     @Test
-    public void generateToken_signatureForgery_throwsSignatureException() {
-        // Arrange
-        UserDetails userDetails = User.builder()
-                .username("test@test.com")
-                .password("hash")
-                .build();
-        HashMap<String, Object> extraClaims = new HashMap<>();
-        String randomUUIDString = UUID.randomUUID().toString();
-        extraClaims.put("id", randomUUIDString);
-        extraClaims.put("role", "CLIENT");
-        String generatedToken = jwtService.generateToken(extraClaims, userDetails);
+    public void generateToken_always_assignsUniqueJti() {
+        UserDetails user = User.builder().username("test@test.com").password("hash").build();
 
-        JwtService hackerService = new JwtService();
-        ReflectionTestUtils.setField(hackerService, "secretKey", "303E635266556A586E3272357538782F413F4428472B4B6250645367566B5970");
-        // Act & Assert
-        assertThrows(SignatureException.class, () -> hackerService.extractUsername(generatedToken));
+        String first = jwtService.parseClaims(jwtService.generateToken(user)).getId();
+        String second = jwtService.parseClaims(jwtService.generateToken(user)).getId();
+
+        assertThat(first).isNotBlank();
+        assertThat(first).isNotEqualTo(second);
     }
 }

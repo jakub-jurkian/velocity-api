@@ -1,57 +1,51 @@
 package com.velocity.api.security;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.time.Duration;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
-import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class JwtService {
-    @Value("${security.jwt.secret-key}")
-    private String secretKey;
-    @Value("${security.jwt.expiration-ms}")
-    private long jwtExpiration;
+    private final SecretKey signInKey;
+    private final JwtParser parser;
+    private final long jwtExpiration;
+    private final Clock clock;
 
-    private SecretKey getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return io.jsonwebtoken.security.Keys.hmacShaKeyFor(keyBytes);
+    public JwtService(
+            @Value("${security.jwt.secret-key}") String secretKey,
+            @Value("${security.jwt.expiration-ms}") long jwtExpiration,
+            Clock clock
+    ) {
+        this.signInKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey));
+        this.parser = Jwts.parser().verifyWith(this.signInKey).build();
+        this.jwtExpiration = jwtExpiration;
+        this.clock = clock;
     }
 
-    public String extractUsername(String token) {
-        return Jwts.parser().verifyWith(getSignInKey()).build().parseSignedClaims(token).getPayload().getSubject();
+    // Verifies signature and expiry once - every accessor reads from the result
+    public Claims parseClaims(String token) {
+        return parser.parseSignedClaims(token).getPayload();
     }
 
-    public Instant extractExpiration(String token) {
-        return Jwts.parser().verifyWith(getSignInKey()).build().parseSignedClaims(token).getPayload().getExpiration().toInstant();
-    }
-
-    public <T> T extractClaim(String token, String claimKey, Class<T> type) {
-        return Jwts.parser()
-                .verifyWith(getSignInKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .get(claimKey, type);
-    }
-
-    public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+    public String generateToken(UserDetails userDetails) {
+        Instant now = Instant.now(clock);
         return Jwts.builder()
-                .claims(extraClaims)
+                .id(UUID.randomUUID().toString())
                 .subject(userDetails.getUsername())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                .signWith(getSignInKey())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusMillis(jwtExpiration)))
+                .signWith(signInKey)
                 .compact();
-    }
-
-    public Duration getJwtExpirationDuration() {
-        return Duration.ofMillis(jwtExpiration);
     }
 }

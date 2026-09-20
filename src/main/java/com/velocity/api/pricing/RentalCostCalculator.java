@@ -1,7 +1,7 @@
 package com.velocity.api.pricing;
 
+import com.velocity.api.common.exception.DomainValidationException;
 import com.velocity.api.pricing.dto.RentalQuote;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -16,16 +16,13 @@ public class RentalCostCalculator {
     private static final BigDecimal TIER_2_MULTIPLIER = new BigDecimal("0.80");
     private static final BigDecimal TIER_3_MULTIPLIER = new BigDecimal("0.60");
 
-    public RentalCostCalculator(@Value("${pricing.daily-rate}") BigDecimal dailyFlatRate) {
-        if (dailyFlatRate.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("The flat rate must be a non-negative value.");
-        }
-        this.dailyFlatRate = dailyFlatRate;
+    public RentalCostCalculator(PricingProperties pricing) {
+        this.dailyFlatRate = pricing.dailyRate();
     }
 
     public RentalQuote calculateQuote(int rentalDays) {
         if (rentalDays <= 0) {
-            throw new IllegalArgumentException("The rental days should be greater than 0.");
+            throw new DomainValidationException("The rental days should be greater than 0.");
         }
         BigDecimal standardCost = this.dailyFlatRate.multiply(BigDecimal.valueOf(rentalDays));
         final BigDecimal multiplier;

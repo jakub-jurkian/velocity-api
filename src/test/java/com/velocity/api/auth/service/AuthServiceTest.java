@@ -10,6 +10,8 @@ import com.velocity.api.user.User;
 import com.velocity.api.auth.dto.UserLoginRequest;
 import com.velocity.api.auth.dto.UserLoginResponse;
 import com.velocity.api.user.repository.UserRepository;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +27,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.Duration;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,7 +77,7 @@ public class AuthServiceTest {
 
         // Tell the AuthenticationManager to return your mockAuth!
         when(authenticationManager.authenticate(any())).thenReturn(mockAuth);
-        when(jwtService.generateToken(any(), any())).thenReturn("fake-jwt-string");
+        when(jwtService.generateToken(any())).thenReturn("fake-jwt-string");
         UserLoginRequest request = new UserLoginRequest("test@test.com", "hash");
         // Act
         UserLoginResponse userLoginResponse = authService.login(request);
@@ -93,7 +96,7 @@ public class AuthServiceTest {
 
         // Mockito's verify to assert zero interactions - database was never queried
         verify(userRepository, never()).findByEmail(anyString());
-        verify(jwtService, never()).generateToken(any(), any());
+        verify(jwtService, never()).generateToken(any());
     }
 
     @Test
@@ -101,12 +104,16 @@ public class AuthServiceTest {
         // Arrange
         Instant now = Instant.parse("2026-01-01T12:00:00Z");
         when(clock.instant()).thenReturn(now);
-        when(jwtService.extractExpiration(anyString())).thenReturn(now.plusSeconds(3600));
+        Claims claims = Jwts.claims()
+                .id("jti-123")
+                .expiration(Date.from(now.plusSeconds(3600)))
+                .build();
+        when(jwtService.parseClaims("fake-token-123")).thenReturn(claims);
+
         authService.logout("fake-token-123");
         ArgumentCaptor<Duration> captor = ArgumentCaptor.forClass(Duration.class);
-        verify(tokenBlacklistRepository).blacklist(eq("fake-token-123"), captor.capture());
-        Duration capturedTtl = captor.getValue();
-        assertThat(capturedTtl).isBetween(Duration.ofSeconds(3590), Duration.ofSeconds(3600));
+        verify(tokenBlacklistRepository).blacklist(eq("jti-123"), captor.capture());
+        assertThat(captor.getValue()).isEqualTo(Duration.ofSeconds(3600));
     }
 
     @Test
@@ -114,7 +121,11 @@ public class AuthServiceTest {
         // Arrange
         Instant now = Instant.parse("2026-01-01T12:00:00Z");
         when(clock.instant()).thenReturn(now);
-        when(jwtService.extractExpiration(anyString())).thenReturn(now.minusSeconds(1));
+        Claims claims = Jwts.claims()
+                .id("jti-123")
+                .expiration(Date.from(now.minusSeconds(1)))
+                .build();
+        when(jwtService.parseClaims("fake-token-123")).thenReturn(claims);
         // Act
         authService.logout("fake-token-123");
         // Assert

@@ -13,6 +13,7 @@ import com.velocity.api.auth.dto.UserProfileResponse;
 import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.user.exception.PhoneAlreadyRegisteredException;
 import com.velocity.api.user.repository.UserRepository;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
 
 @Service
 @Slf4j
@@ -69,20 +69,16 @@ public class AuthService {
             throw new IllegalStateException("Authentication principal is not CustomUserDetails");
         }
 
-        // gather extra claims
-        HashMap<String, Object> extraClaims = new HashMap<>();
-        extraClaims.put("userId", principal.getId());
-        extraClaims.put("role", principal.getRole());
-
         // call token generator
-        String generatedToken = jwtService.generateToken(extraClaims, principal);
+        String generatedToken = jwtService.generateToken(principal);
         return new UserLoginResponse(generatedToken, "Bearer", jwtExpiration);
     }
 
     public void logout(String token) {
-        Instant expirationDate = jwtService.extractExpiration(token);
+        Claims claims = jwtService.parseClaims(token);
+        Instant expirationDate = claims.getExpiration().toInstant();
         Duration ttl = Duration.between(clock.instant(), expirationDate);
-        if (!ttl.isNegative() && !ttl.isZero()) tokenBlacklistRepository.blacklist(token, ttl);
+        if (!ttl.isNegative() && !ttl.isZero()) tokenBlacklistRepository.blacklist(claims.getId(), ttl);
     }
 
     @Transactional(readOnly = true)

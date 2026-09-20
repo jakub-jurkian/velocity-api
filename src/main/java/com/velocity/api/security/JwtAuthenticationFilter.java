@@ -1,6 +1,7 @@
 package com.velocity.api.security;
 
 import com.velocity.api.security.repository.TokenBlacklistRepository;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -61,14 +62,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String rawToken = rawTokenOptional.get();
 
+
         try {
-            if (tokenBlacklistRepository.isBlacklisted(rawToken)) {
+            Claims claims = jwtService.parseClaims(rawToken);   // the only verification
+            // Verify the signature before spending a Redis round trip on the token
+            String username = claims.getSubject();
+            if (username == null || username.isBlank()) {
+                throw new BadCredentialsException("Token subject is missing.");
+            }
+
+            if (tokenBlacklistRepository.isBlacklisted(claims.getId())) {
                 log.warn("JWT token is blacklisted.");
                 resolver.resolveException(request, response, null, new BadCredentialsException("Token is revoked."));
                 return;
             }
 
-            authenticateToken(rawToken, request);
+            authenticateToken(username, request);
 
         } catch (AuthenticationException e) {
             log.warn("Authentication failed: {}", e.getMessage());
@@ -91,11 +100,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return Optional.of(header.substring(BEARER_PREFIX.length()));
     }
 
-    private void authenticateToken(String rawToken, HttpServletRequest request) {
-        String username = jwtService.extractUsername(rawToken);
-        if (username == null || username.isBlank()) {
-            throw new BadCredentialsException("Token subject is missing.");
-        }
+    private void authenticateToken(String username, HttpServletRequest request) {
 
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
             return;

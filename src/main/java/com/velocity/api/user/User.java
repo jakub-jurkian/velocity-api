@@ -59,23 +59,20 @@ public class User {
     }
 
     public void updateProfile(String fullName, String phone, City city) {
-        validateCity(city);
         this.fullName = normalizeAndValidateFullName(fullName);
         this.phone = normalizeAndValidatePhone(phone);
-        this.city = city;
+        this.city = requireNonNull(city, "City");
     }
 
     public void updateProfileByAdmin(String fullName, String phone, City city, String email) {
-        validateCity(city);
         this.fullName = normalizeAndValidateFullName(fullName);
         this.phone = normalizeAndValidatePhone(phone);
-        this.city = city;
+        this.city = requireNonNull(city, "City");
         this.email = normalizeAndValidateEmail(email);
     }
 
     public void changeRoleByAdmin(UserRole role) {
-        validateRole(role);
-        this.role = role;
+        this.role = requireNonNull(role, "Role");
     }
 
     public void block() {
@@ -94,15 +91,12 @@ public class User {
 
     private User(String email, String passwordHash, String fullName, String phone, UserRole role, City city) {
         validatePasswordHash(passwordHash);
-        validateRole(role);
-        validateCity(city);
-
         this.email = normalizeAndValidateEmail(email);
         this.fullName = normalizeAndValidateFullName(fullName);
         this.phone = normalizeAndValidatePhone(phone);
         this.passwordHash = passwordHash;
-        this.role = role;
-        this.city = city;
+        this.role = requireNonNull(role, "Role");
+        this.city = requireNonNull(city, "City");
         this.status = UserStatus.ACTIVE;
     }
 
@@ -124,10 +118,6 @@ public class User {
         return normalizedPhone;
     }
 
-    private void validateCity(City city) {
-        if (city == null) throw new DomainValidationException("City is required");
-    }
-
     private String normalizeAndValidateEmail(String email) {
         if (email == null || email.isBlank()) throw new DomainValidationException("Email is required");
         String normalizedEmail = email.trim().toLowerCase();
@@ -137,11 +127,15 @@ public class User {
         return normalizedEmail;
     }
 
-    private void validatePasswordHash(String password) {
-        if (password == null) throw new DomainValidationException("Password is required");
+    private void validatePasswordHash(String passwordHash) {
+        if (passwordHash == null || passwordHash.isBlank()) throw new DomainValidationException("Password is required");
+
     }
 
-    private void validateRole(UserRole role) {
-        if (role == null) throw new DomainValidationException("Role is required");
+    private <T> T requireNonNull(T value, String fieldName) {
+        if (value == null) {
+            throw new DomainValidationException(fieldName + " is required.");
+        }
+        return value;
     }
 }

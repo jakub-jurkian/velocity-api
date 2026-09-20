@@ -29,7 +29,7 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="jakub-jurkian" id="1782985087770-5">
+    <changeSet author="jakub-jurkian" id="002-bike_models-unique-constraint-name">
         <addUniqueConstraint columnNames="name" constraintName="UC_BIKE_MODELSNAME_COL" tableName="bike_models"/>
     </changeSet>
 </databaseChangeLog>
