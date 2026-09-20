@@ -6,6 +6,7 @@ import org.springframework.data.auditing.DateTimeProvider;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Optional;
 
 @Configuration
@@ -13,7 +14,7 @@ public class ClockConfig {
 
     @Bean
     public Clock clock() {
-        return Clock.systemDefaultZone();
+        return Clock.system(ZoneId.of("Europe/Warsaw"));
     }
 
     @Bean
