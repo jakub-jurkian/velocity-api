@@ -4,7 +4,7 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <changeSet author="jakub-jurkian" id="999-dev-seed-data" context="dev" runOnChange="true">
+    <changeSet author="jakub-jurkian" id="999-dev-seed-data" context="dev">
         <sql>
             -- ═══════════════════════════════════ USERS ═══════════════════════════════════
             INSERT INTO users (id, full_name, email, password_hash, phone, role, status, city, created_at,

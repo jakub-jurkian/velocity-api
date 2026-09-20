@@ -147,6 +147,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                     Map.entry("Duplicate Record", "An account with this phone number already exists.");
             default -> Map.entry("Resource Conflict", "A database conflict occurred.");
         };
+        // Make default log at error and return 500. CannotAcquireLockException (deadlock) is also lumped in there and is a different animal.
 
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, mapped.getValue());
         problem.setTitle(mapped.getKey());
@@ -164,7 +165,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         }
         return null;
     }
-
 
 
     /**

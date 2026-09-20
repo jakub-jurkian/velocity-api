@@ -1,11 +1,13 @@
 package com.velocity.api.bike;
 
+import com.velocity.api.common.exception.DomainValidationException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
+
 
 @Entity
 @Table(name = "bike_models")
@@ -34,7 +36,6 @@ public class BikeModel {
     }
 
     private BikeModel(String name, String description, int speed, int range, int capacity, BikeCategory category) {
-        validateCategory(category);
         validateSpeed(speed);
         validateRange(range);
         validateCapacity(capacity);
@@ -43,42 +44,47 @@ public class BikeModel {
         this.speed = speed;
         this.range = range;
         this.capacity = capacity;
-        this.category = category;
+        this.category = requireNonNull(category, "Category");
     }
 
     private String normalizeAndValidateName(String name) {
-        if (name == null || name.isBlank()) throw new IllegalArgumentException("Name is required");
+        if (name == null || name.isBlank()) throw new DomainValidationException("Name is required");
         String sanitizedName = name.trim();
         if (sanitizedName.length() < 2 || sanitizedName.length() > 60) {
-            throw new IllegalArgumentException("Name length must be between 2 and 60.");
+            throw new DomainValidationException("Name length must be between 2 and 60.");
         }
         return sanitizedName;
     }
 
     private String normalizeAndValidateDescription(String description) {
-        if (description == null || description.isBlank()) throw new IllegalArgumentException("Description is required");
+        if (description == null || description.isBlank())
+            throw new DomainValidationException("Description is required");
         String sanitizedDescription = description.trim();
         if (sanitizedDescription.length() < 2 || sanitizedDescription.length() > 255) {
-            throw new IllegalArgumentException("Description length must be between 2 and 255.");
+            throw new DomainValidationException("Description length must be between 2 and 255.");
         }
         return sanitizedDescription;
     }
 
-    private void validateCategory(BikeCategory bikeCategory) {
-        if (bikeCategory == null) throw new IllegalArgumentException("Bike category is required");
-    }
-
     private void validateSpeed(int speed) {
         if (speed <= 0 || speed > 45)
-            throw new IllegalArgumentException("Speed must be between 1 and 45.");
+            throw new DomainValidationException("Speed must be between 1 and 45.");
     }
 
     private void validateRange(int range) {
         if (range < 15 || range > 500)
-            throw new IllegalArgumentException("Range must be between 15 and 500.");
+            throw new DomainValidationException("Range must be between 15 and 500.");
     }
+
     private void validateCapacity(int capacity) {
         if (capacity <= 0 || capacity > 100)
-            throw new IllegalArgumentException("Capacity must be between 1 and 100.");
+            throw new DomainValidationException("Capacity must be between 1 and 100.");
+    }
+
+    private <T> T requireNonNull(T value, String fieldName) {
+        if (value == null) {
+            throw new DomainValidationException(fieldName + " is required.");
+        }
+        return value;
     }
 }

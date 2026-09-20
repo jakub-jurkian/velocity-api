@@ -7,8 +7,6 @@ import com.velocity.api.bike.repository.BikeInstanceRepository;
 import com.velocity.api.bike.repository.projection.InstanceProjection;
 import com.velocity.api.common.City;
 import com.velocity.api.common.exception.ResourceNotFoundException;
-import com.velocity.api.security.JwtService;
-import com.velocity.api.security.repository.TokenBlacklistRepository;
 import com.velocity.api.user.User;
 import com.velocity.api.user.UserRole;
 import com.velocity.api.user.dto.AdminUserResponse;
@@ -26,7 +24,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,8 +32,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminUserService {
     private final UserRepository userRepository;
-    private final TokenBlacklistRepository tokenBlacklistRepository;
-    private final JwtService jwtService;
     private final BikeInstanceRepository bikeInstanceRepository;
 
     @Transactional(readOnly = true)
@@ -51,8 +46,6 @@ public class AdminUserService {
         }
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found."));
         user.block();
-        Duration tokenExpirationDuration = jwtService.getJwtExpirationDuration();
-        tokenBlacklistRepository.blacklistUser(String.valueOf(id), tokenExpirationDuration);
     }
 
     @Transactional

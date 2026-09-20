@@ -25,7 +25,7 @@ public class FleetController {
             summary = "Get fleet size by status and city",
             description = "Aggregates the total number of bikes in a specific city matching the requested operational status."
     )
-    public ResponseEntity<BikeInstanceCountResponse> getBikesCount(@RequestParam("city") City city, BikeStatus status) {
+    public ResponseEntity<BikeInstanceCountResponse> getBikesCount(@RequestParam("city") City city, @RequestParam("status") BikeStatus status) {
         BikeInstanceCountResponse response = fleetService.getBikesCount(city, status);
         return ResponseEntity.ok(response);
     }

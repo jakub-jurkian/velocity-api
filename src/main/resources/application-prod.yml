@@ -3,7 +3,6 @@ spring:
     url: ${DATABASE_URL}
     username: ${DATABASE_USER}
     password: ${DATABASE_PASSWORD}
-  jpa:
   liquibase:
     contexts: prod
   data:

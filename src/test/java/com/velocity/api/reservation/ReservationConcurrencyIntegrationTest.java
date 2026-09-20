@@ -11,7 +11,6 @@ import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.common.City;
 import com.velocity.api.security.CustomUserDetailsService;
 import com.velocity.api.security.JwtService;
-import com.velocity.api.user.User;
 import com.velocity.api.user.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,12 +21,10 @@ import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRe
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -71,12 +68,8 @@ public class ReservationConcurrencyIntegrationTest extends BaseIntegrationTest {
         BikeInstance savedBikeInstance = bikeInstanceRepository.save(BikeInstance.initialize(savedBikeModel, City.GDANSK));
         bikeInstanceId = savedBikeInstance.getId();
 
-        User user = userRepository.findByEmail("test@test.com").orElseThrow(() -> new BadCredentialsException("Bad credentials"));
-        HashMap<String, Object> extraClaims = new HashMap<>();
-        extraClaims.put("id", user.getId());
-        extraClaims.put("role", user.getRole());
         UserDetails userDetails = customUserDetailsService.loadUserByUsername("test@test.com");
-        validToken = jwtService.generateToken(extraClaims, userDetails);
+        validToken = jwtService.generateToken(userDetails);
     }
 
     @AfterEach

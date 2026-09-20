@@ -1,6 +1,7 @@
 package com.velocity.api.pricing;
 
 
+import com.velocity.api.common.exception.DomainValidationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -19,8 +20,7 @@ public class RentalCostCalculatorTest {
     public void calculate_positiveDaysAndRate_returnsMultipliedTotal() {
         // 1. Arrange
         int rentalDays = 5;
-        BigDecimal flatRate = new BigDecimal("15.50");
-        RentalCostCalculator calculator = new RentalCostCalculator(flatRate);
+        RentalCostCalculator calculator = calculatorWithRate("15.50");
         BigDecimal expectedCost = new BigDecimal("77.50");
         // 2. Act
         BigDecimal actualCost = calculator.calculateQuote(rentalDays).totalCost();
@@ -32,7 +32,7 @@ public class RentalCostCalculatorTest {
     @DisplayName("A flat rate of zero computes to a total cost of zero (Promotional Day)")
     public void calculate_zeroFlatRate_returnsZero() {
         int rentalDays = 3;
-        RentalCostCalculator calculator = new RentalCostCalculator(BigDecimal.ZERO);
+        RentalCostCalculator calculator = calculatorWithRate("0");
 
         BigDecimal actualCost = calculator.calculateQuote(rentalDays).totalCost();
 
@@ -41,20 +41,20 @@ public class RentalCostCalculatorTest {
 
     @Test
     @DisplayName("Clients cannot rent ebikes for zero or negative days")
-    public void calculate_notPositiveDays_throwsIllegalArgumentException() {
+    public void calculate_notPositiveDays_throwsDomainValidationException() {
         // Arrange
         int rentalDays = 0;
-        RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("15.50"));
+        RentalCostCalculator calculator = calculatorWithRate("15.50");
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> calculator.calculateQuote(rentalDays));
+        assertThrows(DomainValidationException.class, () -> calculator.calculateQuote(rentalDays));
     }
 
     @Test
     @DisplayName("Tier 1 Upper Boundary: 7 days applies no discount")
     public void calculate_exactlySevenDays_returnsStandardTotal() {
         // Arrange
-        RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("10.00"));
+        RentalCostCalculator calculator = calculatorWithRate("10.00");
         BigDecimal expectedCost = new BigDecimal("70.00");
 
         // Act
@@ -68,7 +68,7 @@ public class RentalCostCalculatorTest {
     @DisplayName("Tier 2 Lower Boundary: 8 days applies 20% discount")
     public void calculate_eightDays_appliesTwentyPercentDiscount() {
         // Arrange
-        RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("10.00"));
+        RentalCostCalculator calculator = calculatorWithRate("10.00");
         // Base is 80, 20% off is 16. Total: 64.
         BigDecimal expectedCost = new BigDecimal("64.00");
 
@@ -83,7 +83,7 @@ public class RentalCostCalculatorTest {
     @DisplayName("Tier 2 Upper Boundary: 14 days applies 20% discount")
     public void calculate_fourteenDays_appliesTwentyPercentDiscount() {
         // Arrange
-        RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("10.00"));
+        RentalCostCalculator calculator = calculatorWithRate("10.00");
         // Base is 140, 20% off is 28. Total: 112.
         BigDecimal expectedCost = new BigDecimal("112.00");
 
@@ -98,7 +98,7 @@ public class RentalCostCalculatorTest {
     @DisplayName("Tier 3 Lower Boundary: 15 days applies 40% discount")
     public void calculate_fifteenDays_appliesFortyPercentDiscount() {
         // Arrange
-        RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("10.00"));
+        RentalCostCalculator calculator = calculatorWithRate("10.00");
         // Base is 150, 40% off is 60. Total: 90.
         BigDecimal expectedCost = new BigDecimal("90.00");
 
@@ -113,7 +113,7 @@ public class RentalCostCalculatorTest {
     @DisplayName("Tier 3 Upper Boundary: 21 days applies 40% discount")
     public void calculate_twentyOneDays_appliesFortyPercentDiscount() {
         // Arrange
-        RentalCostCalculator calculator = new RentalCostCalculator(new BigDecimal("10.00"));
+        RentalCostCalculator calculator = calculatorWithRate("10.00");
         // Base is 210, 40% off is 84. Total: 126.
         BigDecimal expectedCost = new BigDecimal("126.00");
 
@@ -122,5 +122,9 @@ public class RentalCostCalculatorTest {
 
         // Assert
         assertThat(actualCost).isEqualByComparingTo(expectedCost);
+    }
+
+    private RentalCostCalculator calculatorWithRate(String rate) {
+        return new RentalCostCalculator(new PricingProperties(new BigDecimal(rate)));
     }
 }

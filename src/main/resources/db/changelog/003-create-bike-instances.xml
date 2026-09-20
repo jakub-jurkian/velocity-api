@@ -20,7 +20,7 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="jakub-jurkian" id="1782985087770-8">
+    <changeSet author="jakub-jurkian" id="003-bike_models-fk-add">
         <addForeignKeyConstraint baseColumnNames="bike_model_id" baseTableName="bike_instances"
                                  constraintName="fk_bike_model_on_bike_instance" deferrable="false"
                                  initiallyDeferred="false" referencedColumnNames="id" referencedTableName="bike_models"

@@ -2,6 +2,8 @@ package com.velocity.api.security;
 
 
 import com.velocity.api.security.repository.TokenBlacklistRepository;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.Test;
@@ -18,7 +20,6 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,13 +30,20 @@ public class JwtAuthenticationFilterTest {
     private UserDetailsService userDetailsService;
     @Mock
     private HandlerExceptionResolver resolver;
+    @Mock
+    private JwtService jwtService;
 
     @InjectMocks
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     public void jwtAuthenticationFilterChain_blacklistedToken_requestRejected() throws ServletException, IOException {
-        when(tokenBlacklistRepository.isBlacklisted(anyString())).thenReturn(true);
+        Claims claims = Jwts.claims()
+                .id("jti-123")
+                .subject("test@test.com")
+                .build();
+        when(jwtService.parseClaims("fake-token-123")).thenReturn(claims);
+        when(tokenBlacklistRepository.isBlacklisted("jti-123")).thenReturn(true);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer fake-token-123");
@@ -55,5 +63,6 @@ public class JwtAuthenticationFilterTest {
                 isNull(),
                 any(BadCredentialsException.class)
         );
+        verify(tokenBlacklistRepository).isBlacklisted("jti-123");
     }
 }

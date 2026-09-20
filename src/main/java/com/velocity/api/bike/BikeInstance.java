@@ -2,13 +2,14 @@ package com.velocity.api.bike;
 
 import com.velocity.api.bike.exception.InvalidBikeStatusTransitionException;
 import com.velocity.api.common.City;
-import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
+import com.velocity.api.common.exception.DomainValidationException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
+
 
 @Entity
 @Table(name = "bike_instances")
@@ -30,18 +31,15 @@ public class BikeInstance {
     private BikeModel bikeModel;
 
     @Version
-    Long version;
+    private Long version;
 
     public static BikeInstance initialize(BikeModel bikeModel, City city) {
         return new BikeInstance(bikeModel, city);
     }
 
     private BikeInstance(BikeModel bikeModel, City city) {
-        if (bikeModel == null) throw new IllegalArgumentException("Bike model is required");
-        if (city == null) throw new IllegalArgumentException("City is required");
-
-        this.bikeModel = bikeModel;
-        this.city = city;
+        this.bikeModel = requireNonNull(bikeModel, "BikeModel");
+        this.city = requireNonNull(city, "City");
         this.status = BikeStatus.ACTIVE; // Default state for a new physical bike
     }
 
@@ -57,5 +55,12 @@ public class BikeInstance {
         }
 
         this.status = newStatus;
+    }
+
+    private <T> T requireNonNull(T value, String fieldName) {
+        if (value == null) {
+            throw new DomainValidationException(fieldName + " is required.");
+        }
+        return value;
     }
 }

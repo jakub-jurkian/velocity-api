@@ -50,7 +50,7 @@ public class Reservation {
     @Version // enables optimistic locking
     private Long version;
 
-    public void transitionTo(ReservationStatus newStatus, LocalDate currentDate) throws LateCancelException {
+    public void transitionTo(ReservationStatus newStatus, LocalDate currentDate) {
         if (this.status == newStatus) return;
 
         boolean isValid = switch (this.status) {
@@ -75,17 +75,18 @@ public class Reservation {
     }
 
     private Reservation(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, LocalDate currentDate, BigDecimal totalCost) {
-        if (!startDate.isAfter(currentDate)) {
-            throw new DomainValidationException("Start date cannot be in past or present.");
-        }
+        requireNonNull(currentDate, "Current Date");
         this.user = requireNonNull(user, "User");
         this.bikeInstance = requireNonNull(bikeInstance, "Bike instance");
         this.startDate = requireNonNull(startDate, "Start date");
         this.endDate = requireNonNull(endDate, "End date");
         this.totalCost = requireNonNull(totalCost, "Total cost");
         this.status = ReservationStatus.PENDING;
-
         validateTotalCost(totalCost);
+
+        if (!startDate.isAfter(currentDate)) {
+            throw new DomainValidationException("Start date cannot be in past or present.");
+        }
 
         long days = ChronoUnit.DAYS.between(startDate, endDate);
         if (days < 3 || days > 21) {
