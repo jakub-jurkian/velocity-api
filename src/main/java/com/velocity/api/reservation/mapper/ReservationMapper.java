@@ -14,6 +14,7 @@ public class ReservationMapper {
                 reservation.getEndDate(),
                 reservation.getTotalCost(),
                 reservation.getStatus(),
+                reservation.getCancellationReason(),
                 new BikeSummary(reservation.getBikeInstance().getId(),
                         reservation.getBikeInstance().getBikeModel().getName(),
                         reservation.getBikeInstance().getCity()

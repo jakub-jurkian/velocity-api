@@ -2,6 +2,7 @@ package com.velocity.api.reservation.service;
 
 import com.velocity.api.bike.BikeInstance;
 import com.velocity.api.bike.BikeStatus;
+import com.velocity.api.bike.exception.BikeUnderActiveRentalException;
 import com.velocity.api.bike.repository.BikeInstanceRepository;
 import com.velocity.api.bike.repository.projection.AvailableModelProjection;
 import com.velocity.api.common.City;
