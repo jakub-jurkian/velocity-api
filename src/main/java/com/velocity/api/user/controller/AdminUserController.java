@@ -95,8 +95,8 @@ public class AdminUserController {
             summary = "Update bike operational status",
             description = "Transitions a specific bike instance to a new operational status. Enforces optimistic locking via the provided version number to prevent concurrent administrative modifications."
     )
-    public ResponseEntity<Void> updateBikeStatus(@PathVariable("id") UUID id, @Valid @RequestBody AdminBikeStatusUpdateRequest request) {
-        adminUserService.updateBikeStatus(id, request.status(), request.version());
+    public ResponseEntity<Void> updateBikeStatus(@PathVariable("id") UUID id, @Valid @RequestBody AdminBikeStatusUpdateRequest request, @RequestParam(defaultValue = "false") boolean force) {
+        adminUserService.updateBikeStatus(id, request.status(), request.version(), force);
         return ResponseEntity.noContent().build();
     }
 }

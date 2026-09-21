@@ -1,5 +1,6 @@
 package com.velocity.api.reservation.repository;
 
+import com.velocity.api.bike.BikeStatus;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
 import com.velocity.api.reservation.repository.projection.FleetPopularityProjection;
@@ -54,4 +55,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     List<FleetPopularityProjection> findFleetPopularity();
 
     Optional<Reservation> findByIdAndUserId(UUID id, UUID userId);
+
+    @Query("SELECT r FROM Reservation r JOIN FETCH r.user WHERE r.bikeInstance.id = :bikeId AND r.status IN ('PENDING', 'CONFIRMED') AND r.endDate > :currentDate")
+    List<Reservation> findActiveConflictsForBike(@Param("bikeId") UUID bikeId, @Param("currentDate") LocalDate currentDate);
 }

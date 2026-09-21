@@ -20,4 +20,6 @@ databaseChangeLog:
   - include:
       file: db/changelog/011-add-indexes.xml
   - include:
+      file: db/changelog/012-add-cancellation-reason-for-reservations.xml
+  - include:
       file: db/changelog/dev/999-dev-seed.xml
