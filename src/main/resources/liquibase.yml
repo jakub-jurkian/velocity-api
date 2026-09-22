@@ -1,3 +1,4 @@
+# It is local only
 # TARGET (local PostgreSQL database)
 url: jdbc:postgresql://localhost:5432/velocity
 username: admin

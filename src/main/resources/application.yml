@@ -6,10 +6,11 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
+    hibernate:
+      ddl-auto: validate
     properties:
       hibernate:
         order_updates: true
-        ddl-auto: validate
         jdbc:
           batch_size: 50
           time_zone: UTC
@@ -18,8 +19,11 @@ spring:
       pageable:
         max-page-size: 50
     redis:
+      timeout: 200ms
+      connect-timeout: 200ms
       repositories:
         enabled: false
+
   web:
     locale: en
 

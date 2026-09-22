@@ -1,4 +1,4 @@
-package com.velocity.api.user.Service;
+package com.velocity.api.user.service;
 
 import com.velocity.api.auth.service.AuthService;
 import com.velocity.api.common.City;
@@ -7,7 +7,6 @@ import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.user.User;
 import com.velocity.api.auth.dto.UserProfileUpdateRequest;
 import com.velocity.api.user.repository.UserRepository;
-import com.velocity.api.user.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,16 +40,11 @@ public class UserServiceTest {
     @DisplayName("Given a valid session but missing user, getProfile should throw exception")
     @Test
     public void getProfile_userDeleted_throwsException() {
-        // Arrange: Create mocks for the security context
+        // Arrange: Create mocs for the security context
         SecurityContext securityContext = mock(SecurityContext.class);
-//        Authentication authentication = mock(Authentication.class);
-//        UserDetails userDetails = mock(UserDetails.class);
 
-        // Configure the mocks to return a specific email
+        // Configure the mock to return a specific email
         String testEmail = "test@test.com";
-//        when(userDetails.getUsername()).thenReturn(testEmail);
-//        when(authentication.getPrincipal()).thenReturn(userDetails);
-//        when(securityContext.getAuthentication()).thenReturn(authentication);
 
         // Inject the mocked context into the static Spring Security holder
         SecurityContextHolder.setContext(securityContext);

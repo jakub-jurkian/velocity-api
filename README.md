@@ -26,7 +26,7 @@ Every tool here earns its place - picked for a specific job.
 | **Spring Security + JWT** | Stateless authentication and role-based access (client vs admin).                                                 |
 | **BigDecimal** | Exact money arithmetic — no floating-point rounding on prices.                                                    |
 | **JUnit 5 & Mockito** | Automated tests, including proof that double-booking is blocked.                                                  |
-| **Docker & Docker Compose** | One-command local database and a containerized, deploy-anywhere app.                                              |
+| **Docker & Docker Compose** | One-command local Postgres and Redis for development.                                                             |
 | **GitHub Actions** | Continuous integration — every change is built and tested automatically.                                          |
 | **Swagger / OpenAPI** | Interactive, always-current API docs to easily navigate through the app.                                          |
 
@@ -72,14 +72,31 @@ docker-compose up -d
 
 **Explore the API:**
 
-Navigate to the interactive Swagger UI at: `http://localhost:8080/swagger-ui.html`
+Navigate to the interactive Swagger UI at: `http://localhost:8080/api/swagger-ui.html`
+The raw OpenAPI document is served at `http://localhost:8080/api/api-docs`.
 
 ### Core Endpoints
 
+Every endpoint is namespaced under `/api/v1`. Only registration and login are public; everything else requires a Bearer token.
+
 | Method | Endpoint | Description | Access |
 |---|---|---|---|
-| `GET` | `/api/v1/bikes` | List available e-bikes for a date range | Public |
-| `POST` | `/api/v1/reservations` | Book a bike for specific dates | Client |
-| `PATCH` | `/api/v1/reservations/{id}/status` | Transition reservation state (e.g., Cancel) | Client / Admin |
-| `POST` | `/api/v1/auth/register` | Create a new user account | Public |
-| `POST` | `/api/v1/auth/login` | Authenticate and receive JWT | Public |
+| `POST` | `/auth/register` | Create a new user account | Public |
+| `POST` | `/auth/login` | Authenticate and receive a JWT | Public |
+| `POST` | `/auth/logout` | Revoke the current token | Authenticated |
+| `GET` | `/auth/me` | Current user profile | Authenticated |
+| `PATCH` | `/users/{id}` | Update own profile | Owner only |
+| `GET` | `/fleet/count?city=&status=` | Fleet size by city and status | Authenticated |
+| `GET` | `/reservations/availability?startDate=&endDate=` | Available models plus a server-priced quote | Authenticated |
+| `POST` | `/reservations` | Book a bike for specific dates | Authenticated |
+| `GET` | `/reservations/my` | Own reservation history, paginated | Authenticated |
+| `POST` | `/reservations/{id}/confirm` | Confirm a pending reservation | Reservation owner |
+| `POST` | `/reservations/{id}/cancel` | Cancel a reservation | Reservation owner |
+| `GET` | `/admin/users` | List users, paginated | Admin |
+| `POST` | `/admin/users/{id}/block` · `/unblock` | Suspend or restore an account | Admin |
+| `PATCH` | `/admin/users/{id}` · `/{id}/role` | Update a user's details or role | Admin |
+| `GET` | `/admin/bikes` | List bike instances, optional `?status=` | Admin |
+| `PATCH` | `/admin/bikes/{id}/status` | Transition a bike's operational status | Admin |
+| `GET` | `/admin/analytics` | Revenue, occupancy and fleet popularity | Admin |
+
+The availability endpoint derives the city from the authenticated user rather than accepting it as a parameter.
