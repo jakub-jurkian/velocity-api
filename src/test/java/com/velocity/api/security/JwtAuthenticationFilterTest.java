@@ -14,7 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.authentication.BadCredentialsException;
+import com.velocity.api.security.exception.InvalidTokenException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
@@ -61,7 +61,10 @@ public class JwtAuthenticationFilterTest {
                 eq(request),
                 eq(response),
                 isNull(),
-                any(BadCredentialsException.class)
+                // A revoked token is a token problem, not a password problem:
+                // BadCredentialsException here made the API tell the user
+                // their email or password was wrong.
+                any(InvalidTokenException.class)
         );
         verify(tokenBlacklistRepository).isBlacklisted("jti-123");
     }

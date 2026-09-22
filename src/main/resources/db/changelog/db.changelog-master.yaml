@@ -23,3 +23,5 @@ databaseChangeLog:
       file: db/changelog/012-add-cancellation-reason-for-reservations.xml
   - include:
       file: db/changelog/dev/999-dev-seed.xml
+  - include:
+      file: db/changelog/prod/001-prod-seed.xml

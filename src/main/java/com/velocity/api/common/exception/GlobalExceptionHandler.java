@@ -6,6 +6,7 @@ import com.velocity.api.bike.exception.InvalidBikeStateException;
 import com.velocity.api.bike.exception.InvalidBikeStatusTransitionException;
 import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
 import com.velocity.api.reservation.exception.LateCancelException;
+import com.velocity.api.security.exception.InvalidTokenException;
 import com.velocity.api.user.exception.CannotDemoteSelfException;
 import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.user.exception.InvalidUserStateException;
@@ -252,13 +253,39 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem;
     }
 
+    /**
+     * Only the login path reaches this: the AuthenticationManager throws it when
+     * the submitted email and password do not match. Token failures have their
+     * own type, so this message can be specific without misleading anyone.
+     */
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail handleBadCredentialsException(BadCredentialsException ex) {
         log.warn("Bad credentials: {}", ex.getMessage());
-        return ProblemDetail.forStatusAndDetail(
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.UNAUTHORIZED,
                 "Incorrect email or password."
         );
+        problem.setTitle("Unauthorized");
+        return problem;
+    }
+
+    /**
+     * A bearer token that is malformed, expired, revoked or missing its subject.
+     * The remedy is a fresh login, not a password reset — which is what the
+     * client was being told while this shared BadCredentialsException.
+     *
+     * <p>The reason is logged but never returned: which of the four ways a token
+     * failed is not the caller's business.
+     */
+    @ExceptionHandler(InvalidTokenException.class)
+    public ProblemDetail handleInvalidTokenException(InvalidTokenException ex) {
+        log.warn("Rejected token: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED,
+                "Your session is no longer valid. Please log in again."
+        );
+        problem.setTitle("Session Expired");
+        return problem;
     }
 
     @ExceptionHandler(InvalidUserStateException.class)
