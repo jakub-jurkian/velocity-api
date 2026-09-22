@@ -10,7 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.authentication.BadCredentialsException;
+import com.velocity.api.security.exception.InvalidTokenException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -68,12 +68,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Verify the signature before spending a Redis round trip on the token
             String username = claims.getSubject();
             if (username == null || username.isBlank()) {
-                throw new BadCredentialsException("Token subject is missing.");
+                throw new InvalidTokenException("Token subject is missing.");
             }
 
             if (tokenBlacklistRepository.isBlacklisted(claims.getId())) {
                 log.warn("JWT token is blacklisted.");
-                resolver.resolveException(request, response, null, new BadCredentialsException("Token is revoked."));
+                resolver.resolveException(request, response, null, new InvalidTokenException("Token is revoked."));
                 return;
             }
 
@@ -85,7 +85,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         } catch (JwtException e) {
             log.warn("JWT parsing failed: {}", e.getMessage());
-            resolver.resolveException(request, response, null, new BadCredentialsException("Invalid or expired token", e));
+            resolver.resolveException(request, response, null, new InvalidTokenException("Invalid or expired token", e));
             return;
         }
 
