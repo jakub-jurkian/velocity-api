@@ -1,0 +1,353 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+      PRODUCTION SEED - it ships demo accounts with published passwords.
+
+      This is a portfolio deployment. Being browsable by someone who has never met me IS the
+      purpose of this environment, so the seed belongs in the only context that environment
+      runs. A system with real customers would seed nothing here and provision the first admin
+      out of band.
+
+      WHAT RUNS WHEN
+        - 001 seeds the bike catalogue once. Reference data, it never changes.
+        - 002/003/004 are runAlways: they re-assert the demo state on every application start.
+          Liquibase normally runs a changeset once, which would freeze the dates at first boot -
+          three months later the dashboard would read 0 active rentals and 0% occupancy, and a
+          recruiter opening the link on their own schedule would see a dead site. These three
+          re-anchor everything to CURRENT_DATE instead.
+
+      CONSEQUENCE, STATED PLAINLY: changeset 004 deletes every reservation in the database on
+      each boot, including any a visitor created. On a demo box that is the point - the tour
+      resets to its scripted state and stays repeatable. It is also why none of this may ever be
+      pointed at a database holding real bookings.
+
+      See DEMO.md for the walkthrough these fixtures exist to support.
+    -->
+
+    <!-- ══════════════════════════════════ BIKE MODELS ══════════════════════════════════
+         One model per BikeCategory - the enum has exactly three. IDs and names are identical to
+         the dev seed on purpose: bike_models.name is UNIQUE, and ON CONFLICT (id) DO NOTHING
+         would not save us from a name collision if the two seeds ever met in one database.
+    -->
+    <changeSet author="jakub-jurkian" id="001-prod-seed-bike-models" context="prod">
+        <sql>
+            INSERT INTO bike_models (id, name, category, description, speed, range, capacity)
+            VALUES ('b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 'Sprint Courier S1', 'AGILITY',
+                    'Lightweight city courier, agile enough to weave through traffic. Perfect for backpack delivery.',
+                    45, 80, 40),
+                   ('3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 'Endurance Pro 2.0', 'DUAL_BATTERY',
+                    'Built for the 10-hour shift. Dual-battery ensures you never run out during the dinner rush.',
+                    35, 100, 60),
+                   ('7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 'Cargo King XL', 'HEAVY_DUTY',
+                    '10 pizzas? No problem. Features insulated front box and heavy-duty rear rack.',
+                    25, 60, 100)
+            ON CONFLICT (id) DO NOTHING;
+        </sql>
+    </changeSet>
+
+    <!-- ═════════════════════════════════════ ACCOUNTS ═════════════════════════════════════
+         Passwords: admins "Admin123!", clients "Client123!" (BCrypt strength 10, the default of
+         the BCryptPasswordEncoder bean in SecurityConfig). Both satisfy the registration policy
+         in UserRegistrationRequest, so they can be re-registered by hand if needed.
+
+         Upserted rather than inserted, because the walkthrough mutates these rows: step 14 has
+         an admin blocking ops@ and promoting newbie@. Without the DO UPDATE the second person
+         to take the tour would find those steps already done.
+
+         Accounts a visitor registers are left alone - they cost nothing and nothing depends on
+         them being gone.
+    -->
+    <changeSet author="jakub-jurkian" id="002-prod-demo-accounts" context="prod"
+               runAlways="true" runOnChange="true">
+        <sql>
+            INSERT INTO users (id, full_name, email, password_hash, phone, role, status, city,
+                               created_at, last_modified, version)
+            VALUES
+                -- The admin you present with.
+                ('3e2d1c0b-9f8e-4a7b-6c5d-4f3e2d1c0b9a', 'Charlie Admin', 'admin@velocity.com',
+                 '$2a$10$vEoHfAC1zkMOf68xg/4zIuXXxY5Ju6zRCe3EKvwmR.lX3n3L9xJPy',
+                 '+48500000101', 'ADMIN', 'ACTIVE', 'WARSAW',
+                 CURRENT_TIMESTAMP - INTERVAL '240 days', CURRENT_TIMESTAMP, 0),
+
+                -- A second admin, so admin #1 has someone to block and demote: AdminUserService
+                -- refuses both operations when the target is your own account.
+                ('1f0e9d8c-7b6a-4958-9473-2615043a8b9c', 'Dana Operations', 'ops@velocity.com',
+                 '$2a$10$skP0zHHEWE6nsDhaRePa8uOdG8sZF3/THb.Pv69ARnhwNIjzv1TbC',
+                 '+48500000102', 'ADMIN', 'ACTIVE', 'GDANSK',
+                 CURRENT_TIMESTAMP - INTERVAL '200 days', CURRENT_TIMESTAMP, 0),
+
+                -- The main demo client: every scripted client-side step runs on this account.
+                ('4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'Bob Jones', 'client@velocity.com',
+                 '$2a$10$Ib7dt/jUROIBua9s6EGtX.f89j8hJs0Hc9PFYXVVz.XUkTdeVFVFq',
+                 '+49305550192', 'CLIENT', 'ACTIVE', 'WARSAW',
+                 CURRENT_TIMESTAMP - INTERVAL '220 days', CURRENT_TIMESTAMP, 0),
+
+                -- A second client in another city: proves findByIdAndUserId scopes reservations
+                -- per owner, and that availability is filtered by the caller's own city.
+                ('d8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', 'Alice Smith', 'alice@velocity.com',
+                 '$2a$10$RodoNklq3tKWIs8mF.IarO2Gkg.eO4SypzN2cRSQy5iOcwtWlCPFe',
+                 '+442079460912', 'CLIENT', 'ACTIVE', 'WROCLAW',
+                 CURRENT_TIMESTAMP - INTERVAL '180 days', CURRENT_TIMESTAMP, 0),
+
+                -- Blocked, but keeps its history and one rental still under way: blocking an
+                -- account stops the login, it does not void the bookings.
+                ('2a3b4c5d-6e7f-4809-91a2-b3c4d5e6f708', 'Dave Blocked', 'blocked@velocity.com',
+                 '$2a$10$4B3.pba1SJ0fswLMLLO0g.fela1Ims6UwkKL5vDjFF9wQrhBtvwxW',
+                 '+48500000105', 'CLIENT', 'BLOCKED', 'POZNAN',
+                 CURRENT_TIMESTAMP - INTERVAL '150 days', CURRENT_TIMESTAMP, 0),
+
+                -- Zero reservations on purpose: the empty state of /my-rentals, and the target
+                -- for the promote-to-ADMIN demo.
+                ('9c8b7a69-5847-4362-8150-f4e3d2c1b0a9', 'Nina Newcomer', 'newbie@velocity.com',
+                 '$2a$10$sG9zF4RQtZ9GJLpJ.SrXmudLs/miocAuhlsANjnk9ULofAMsW5E5K',
+                 '+48500000106', 'CLIENT', 'ACTIVE', 'WARSAW',
+                 CURRENT_TIMESTAMP - INTERVAL '2 days', CURRENT_TIMESTAMP, 0)
+            ON CONFLICT (id) DO UPDATE SET full_name     = EXCLUDED.full_name,
+                                           email         = EXCLUDED.email,
+                                           password_hash = EXCLUDED.password_hash,
+                                           phone         = EXCLUDED.phone,
+                                           role          = EXCLUDED.role,
+                                           status        = EXCLUDED.status,
+                                           city          = EXCLUDED.city,
+                                           last_modified = CURRENT_TIMESTAMP,
+                                           version       = 0;
+        </sql>
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════ FLEET ═══════════════════════════════════════
+         44 bikes, 30 of them ACTIVE, spread over the four cities so /api/v1/fleet/count has
+         something to say about each and /admin/bikes pages three times at the default size of 20.
+
+         The seven bikes in the 00000000-... block are the scripted ones. They sort first, so
+         findAvailableModels (DISTINCT ON (m.id) ORDER BY m.id, i.id) surfaces them to a WARSAW
+         client ahead of the filler fleet, and they are trivial to pick out in the admin table.
+
+         Upserted for the same reason as the accounts: the walkthrough retires DEMO-7 and sends
+         DEMO-1 to MAINTENANCE, and the next visitor needs to find them as described. version is
+         reset to 0 so the optimistic-locking step in the tour starts from a known number.
+    -->
+    <changeSet author="jakub-jurkian" id="003-prod-demo-fleet" context="prod"
+               runAlways="true" runOnChange="true">
+        <sql>
+            INSERT INTO bike_instances (id, city, status, bike_model_id, version)
+            VALUES
+                -- ── Scripted demo bikes (all WARSAW, all reachable from client@velocity.com) ──
+                -- DEMO-1: ACTIVE, rental under way right now. Taking it off the road returns 409
+                -- with the conflicting rental; ?force=true cancels that rental through
+                -- cancelByOperator, which is the only path the late-cancel rule does not block.
+                ('00000000-0000-4000-8000-000000000001', 'WARSAW', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                -- DEMO-2: ACTIVE, rental starts in 2 days. Same 409, but the casualty of a
+                -- forced change is a booking that has not begun.
+                ('00000000-0000-4000-8000-000000000002', 'WARSAW', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                -- DEMO-3: ACTIVE and completely free. Clean booking target.
+                ('00000000-0000-4000-8000-000000000003', 'WARSAW', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+                -- DEMO-4: MAINTENANCE, returns to service.
+                ('00000000-0000-4000-8000-000000000004', 'WARSAW', 'MAINTENANCE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 0),
+                -- DEMO-5: LOST. LOST -> ACTIVE is refused, LOST -> MAINTENANCE is allowed.
+                ('00000000-0000-4000-8000-000000000005', 'WARSAW', 'LOST', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                -- DEMO-6: RETIRED. Terminal - every transition is refused.
+                ('00000000-0000-4000-8000-000000000006', 'WARSAW', 'RETIRED', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+                -- DEMO-7: ACTIVE with two finished rentals and nothing current. Proves
+                -- findActiveConflictsForBike filters on end_date > today - retiring it just works.
+                ('00000000-0000-4000-8000-000000000007', 'WARSAW', 'ACTIVE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 0),
+
+                -- ── WARSAW filler: 7 ACTIVE, 1 MAINTENANCE, 1 LOST, 1 RETIRED ──
+                ('11111111-1111-4111-8111-000000000001', 'WARSAW', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                ('11111111-1111-4111-8111-000000000002', 'WARSAW', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+                ('11111111-1111-4111-8111-000000000003', 'WARSAW', 'ACTIVE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 0),
+                ('11111111-1111-4111-8111-000000000004', 'WARSAW', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                ('11111111-1111-4111-8111-000000000005', 'WARSAW', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+                ('11111111-1111-4111-8111-000000000006', 'WARSAW', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                ('11111111-1111-4111-8111-000000000007', 'WARSAW', 'ACTIVE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 0),
+                ('11111111-1111-4111-8111-000000000008', 'WARSAW', 'MAINTENANCE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+                ('11111111-1111-4111-8111-000000000009', 'WARSAW', 'LOST', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                ('11111111-1111-4111-8111-000000000010', 'WARSAW', 'RETIRED', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 0),
+
+                -- ── WROCLAW: 6 ACTIVE, 1 MAINTENANCE, 1 LOST, 1 RETIRED (alice@velocity.com) ──
+                ('22222222-2222-4222-8222-000000000001', 'WROCLAW', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                ('22222222-2222-4222-8222-000000000002', 'WROCLAW', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+                ('22222222-2222-4222-8222-000000000003', 'WROCLAW', 'ACTIVE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 0),
+                ('22222222-2222-4222-8222-000000000004', 'WROCLAW', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                ('22222222-2222-4222-8222-000000000005', 'WROCLAW', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+                ('22222222-2222-4222-8222-000000000006', 'WROCLAW', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                ('22222222-2222-4222-8222-000000000007', 'WROCLAW', 'MAINTENANCE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 0),
+                ('22222222-2222-4222-8222-000000000008', 'WROCLAW', 'LOST', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+                ('22222222-2222-4222-8222-000000000009', 'WROCLAW', 'RETIRED', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+
+                -- ── GDANSK: 6 ACTIVE, 1 MAINTENANCE, 1 LOST, 1 RETIRED (ops@velocity.com) ──
+                ('33333333-3333-4333-8333-000000000001', 'GDANSK', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                ('33333333-3333-4333-8333-000000000002', 'GDANSK', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+                ('33333333-3333-4333-8333-000000000003', 'GDANSK', 'ACTIVE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 0),
+                ('33333333-3333-4333-8333-000000000004', 'GDANSK', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                ('33333333-3333-4333-8333-000000000005', 'GDANSK', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+                ('33333333-3333-4333-8333-000000000006', 'GDANSK', 'ACTIVE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 0),
+                ('33333333-3333-4333-8333-000000000007', 'GDANSK', 'MAINTENANCE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                ('33333333-3333-4333-8333-000000000008', 'GDANSK', 'LOST', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 0),
+                ('33333333-3333-4333-8333-000000000009', 'GDANSK', 'RETIRED', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+
+                -- ── POZNAN: 7 ACTIVE, 1 MAINTENANCE, 1 RETIRED (blocked@velocity.com) ──
+                ('44444444-4444-4444-8444-000000000001', 'POZNAN', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                ('44444444-4444-4444-8444-000000000002', 'POZNAN', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+                ('44444444-4444-4444-8444-000000000003', 'POZNAN', 'ACTIVE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 0),
+                ('44444444-4444-4444-8444-000000000004', 'POZNAN', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                ('44444444-4444-4444-8444-000000000005', 'POZNAN', 'ACTIVE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+                ('44444444-4444-4444-8444-000000000006', 'POZNAN', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
+                ('44444444-4444-4444-8444-000000000007', 'POZNAN', 'ACTIVE', '7e2d4c6b-8f1a-42c3-9b4e-1a2b3c4d5e6f', 0),
+                ('44444444-4444-4444-8444-000000000008', 'POZNAN', 'MAINTENANCE', '3a1f9e8d-7c6b-45a4-92e1-0f4a3b2c1d9e', 0),
+                ('44444444-4444-4444-8444-000000000009', 'POZNAN', 'RETIRED', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0)
+            ON CONFLICT (id) DO UPDATE SET city          = EXCLUDED.city,
+                                           status        = EXCLUDED.status,
+                                           bike_model_id = EXCLUDED.bike_model_id,
+                                           version       = 0;
+        </sql>
+    </changeSet>
+
+    <!-- ═══════════════════════════════════ RESERVATIONS ═══════════════════════════════════
+         Wiped and rebuilt on every boot, which is what keeps the demo from rotting: dates are
+         derived from CURRENT_DATE each time, so "rented right now" means right now whenever a
+         recruiter happens to open the link.
+
+         The wipe is unconditional (DELETE FROM reservations, no WHERE) for a practical reason as
+         well as a tidiness one: no_overlapping_active_reservations would reject the re-insert if
+         a visitor had booked one of these bikes for overlapping dates. Clearing the table first
+         makes the rebuild deterministic instead of occasionally fatal.
+
+         History is written as (months_back, day_off, days) anchored to the start of its own
+         month, so each row always lands in the bucket findRevenueTrend groups it into, whatever
+         day of the month this runs. day_off + days never exceeds 26, so nothing in the
+         months_back = 1 batch can spill into today or the future.
+
+         Everything historical is COMPLETED or CANCELLED, never CONFIRMED: the exclusion
+         constraint only covers PENDING/CONFIRMED so finished rentals may stack on one bike, and
+         completePastDueConfirmedReservations (01:00 daily) would rewrite any past-dated
+         CONFIRMED row anyway.
+
+         total_cost is computed rather than typed, mirroring RentalCostCalculator at the
+         daily-rate of 25.00 in application.yml: 25/day up to 7 days, 20/day to 14, then 15.
+         Hand-typed numbers would drift from the quote a reviewer gets for the same range.
+    -->
+    <changeSet author="jakub-jurkian" id="004-prod-demo-reservations" context="prod"
+               runAlways="true" runOnChange="true">
+        <sql>
+            DELETE FROM reservations;
+        </sql>
+        <sql>
+            INSERT INTO reservations (id, start_date, end_date, total_cost, status, cancellation_reason,
+                                      created_at, version, user_id, bike_instance_id)
+            SELECT s.id,
+                   s.start_date,
+                   s.start_date + s.days,
+                   (s.days * CASE WHEN s.days > 14 THEN 15.00
+                                  WHEN s.days > 7 THEN 20.00
+                                  ELSE 25.00 END)::numeric(38, 2),
+                   s.status,
+                   s.reason,
+                   ((s.start_date - 5)::timestamp + INTERVAL '9 hours 30 minutes') AT TIME ZONE 'Europe/Warsaw',
+                   0,
+                   s.user_id,
+                   s.bike_id
+            FROM (SELECT t.id::uuid AS id,
+                         (date_trunc('month', CURRENT_DATE) - (t.months_back || ' months')::interval)::date
+                             + t.day_off AS start_date,
+                         t.days   AS days,
+                         t.status AS status,
+                         t.reason AS reason,
+                         t.user_id::uuid AS user_id,
+                         t.bike_id::uuid AS bike_id
+                  FROM (VALUES
+                      -- id, months_back, day_off, days, status, cancellation_reason, user, bike
+                      ('a0000000-0000-4000-8000-000000000001', 5,  1,  7, 'COMPLETED', NULL::varchar(255), '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000001'),
+                      ('a0000000-0000-4000-8000-000000000002', 5,  4, 10, 'COMPLETED', NULL, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '22222222-2222-4222-8222-000000000001'),
+                      ('a0000000-0000-4000-8000-000000000003', 5,  9,  3, 'COMPLETED', NULL, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000002'),
+                      -- Cancelled by the client. ReservationService.cancelReservation never writes
+                      -- a reason, so NULL here is what the application itself would have stored.
+                      ('a0000000-0000-4000-8000-000000000004', 5, 15,  5, 'CANCELLED', NULL, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '22222222-2222-4222-8222-000000000003'),
+                      ('a0000000-0000-4000-8000-000000000005', 5, 18, 16, 'COMPLETED', NULL, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000004'),
+
+                      ('a0000000-0000-4000-8000-000000000006', 4,  2,  4, 'COMPLETED', NULL, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000005'),
+                      ('a0000000-0000-4000-8000-000000000007', 4,  6, 14, 'COMPLETED', NULL, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '22222222-2222-4222-8222-000000000002'),
+                      -- The blocked account keeps the rentals it made before it was blocked.
+                      ('a0000000-0000-4000-8000-000000000008', 4, 11,  7, 'COMPLETED', NULL, '2a3b4c5d-6e7f-4809-91a2-b3c4d5e6f708', '44444444-4444-4444-8444-000000000001'),
+                      ('a0000000-0000-4000-8000-000000000009', 4, 17,  3, 'COMPLETED', NULL, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000007'),
+
+                      ('a0000000-0000-4000-8000-000000000010', 3,  3, 21, 'COMPLETED', NULL, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000007'),
+                      ('a0000000-0000-4000-8000-000000000011', 3,  5,  6, 'COMPLETED', NULL, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '22222222-2222-4222-8222-000000000003'),
+                      ('a0000000-0000-4000-8000-000000000012', 3, 12,  9, 'COMPLETED', NULL, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '00000000-0000-4000-8000-000000000001'),
+                      -- The one operator cancellation in the history. cancelByOperator is the only
+                      -- path that fills cancellation_reason, and this is the string it writes.
+                      ('a0000000-0000-4000-8000-000000000013', 3, 20,  4, 'CANCELLED', 'Cancelled by Admin: Bike transitioned to MAINTENANCE', '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000001'),
+
+                      ('a0000000-0000-4000-8000-000000000014', 2,  1, 12, 'COMPLETED', NULL, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '22222222-2222-4222-8222-000000000005'),
+                      ('a0000000-0000-4000-8000-000000000015', 2,  7,  5, 'COMPLETED', NULL, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000002'),
+                      -- Gives DEMO-7 a past that does not block a status change today.
+                      ('a0000000-0000-4000-8000-000000000016', 2, 14,  7, 'COMPLETED', NULL, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '00000000-0000-4000-8000-000000000007'),
+                      ('a0000000-0000-4000-8000-000000000017', 2, 19,  3, 'COMPLETED', NULL, '2a3b4c5d-6e7f-4809-91a2-b3c4d5e6f708', '44444444-4444-4444-8444-000000000002'),
+
+                      ('a0000000-0000-4000-8000-000000000018', 1,  2,  8, 'COMPLETED', NULL, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000004'),
+                      ('a0000000-0000-4000-8000-000000000019', 1,  6, 15, 'COMPLETED', NULL, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '22222222-2222-4222-8222-000000000006'),
+                      ('a0000000-0000-4000-8000-000000000020', 1, 10,  4, 'CANCELLED', NULL, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '22222222-2222-4222-8222-000000000001'),
+                      ('a0000000-0000-4000-8000-000000000021', 1, 16,  6, 'COMPLETED', NULL, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '00000000-0000-4000-8000-000000000007')
+                  ) AS t(id, months_back, day_off, days, status, reason, user_id, bike_id)) s;
+        </sql>
+        <sql>
+            INSERT INTO reservations (id, start_date, end_date, total_cost, status, cancellation_reason,
+                                      created_at, version, user_id, bike_instance_id)
+            SELECT s.id,
+                   s.start_date,
+                   s.start_date + s.days,
+                   (s.days * CASE WHEN s.days > 14 THEN 15.00
+                                  WHEN s.days > 7 THEN 20.00
+                                  ELSE 25.00 END)::numeric(38, 2),
+                   s.status,
+                   NULL::varchar(255),
+                   -- A PENDING row has to be born now. cancelStalePendingReservations sweeps every
+                   -- 5 minutes for anything PENDING older than 30 minutes, so a back-dated
+                   -- created_at would be CANCELLED before anyone reached the login screen.
+                   CASE WHEN s.status = 'PENDING' THEN now()
+                        ELSE ((s.start_date - 5)::timestamp + INTERVAL '9 hours 30 minutes') AT TIME ZONE 'Europe/Warsaw'
+                   END,
+                   0,
+                   s.user_id,
+                   s.bike_id
+            FROM (SELECT t.id::uuid AS id,
+                         CURRENT_DATE + t.start_off AS start_date,
+                         t.days   AS days,
+                         t.status AS status,
+                         t.user_id::uuid AS user_id,
+                         t.bike_id::uuid AS bike_id
+                  FROM (VALUES
+                      -- id, start_off (days from today), days, status, user, bike
+                      -- Bob, under way on DEMO-1: this bike is out with a rider right now.
+                      ('b0000000-0000-4000-8000-000000000001', -3,  7, 'CONFIRMED', '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '00000000-0000-4000-8000-000000000001'),
+                      -- Bob, starts in 2 days on DEMO-2: a conflict that has not begun yet.
+                      ('b0000000-0000-4000-8000-000000000002',  2,  5, 'CONFIRMED', '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '00000000-0000-4000-8000-000000000002'),
+                      -- Bob, starts TODAY. Cancelling this must raise LateCancelException, because
+                      -- Reservation.transitionTo refuses a cancel on or after start_date.
+                      ('b0000000-0000-4000-8000-000000000003',  0,  5, 'CONFIRMED', '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000001'),
+                      -- Bob, starts in 9 days: the cancel that is supposed to succeed.
+                      ('b0000000-0000-4000-8000-000000000004',  9,  6, 'CONFIRMED', '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000002'),
+                      -- Alice, under way.
+                      ('b0000000-0000-4000-8000-000000000005', -6, 14, 'CONFIRMED', 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '22222222-2222-4222-8222-000000000001'),
+                      -- Alice, upcoming.
+                      ('b0000000-0000-4000-8000-000000000006',  4,  9, 'CONFIRMED', 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '22222222-2222-4222-8222-000000000002'),
+                      -- Alice, under way.
+                      ('b0000000-0000-4000-8000-000000000007', -4,  7, 'CONFIRMED', 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '22222222-2222-4222-8222-000000000004'),
+                      -- The blocked account still has a bike out: the block stops the login, not
+                      -- the rental that was already running.
+                      ('b0000000-0000-4000-8000-000000000008', -2, 11, 'CONFIRMED', '2a3b4c5d-6e7f-4809-91a2-b3c4d5e6f708', '44444444-4444-4444-8444-000000000001'),
+                      -- Bob, unconfirmed. Confirm it within 30 minutes of a boot, or watch the
+                      -- scheduler cancel it - both are worth showing.
+                      ('b0000000-0000-4000-8000-000000000009', 12,  4, 'PENDING',   '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000004'),
+                      -- Two rentals that finished in the last few weeks, so the newest column of
+                      -- the revenue trend is never empty however early in the month this runs.
+                      ('b0000000-0000-4000-8000-000000000010', -25, 7, 'COMPLETED', '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000005'),
+                      ('b0000000-0000-4000-8000-000000000011', -12, 5, 'COMPLETED', 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '22222222-2222-4222-8222-000000000005')
+                  ) AS t(id, start_off, days, status, user_id, bike_id)) s;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
