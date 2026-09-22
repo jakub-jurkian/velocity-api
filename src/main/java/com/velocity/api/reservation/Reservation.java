@@ -36,6 +36,7 @@ public class Reservation {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private ReservationStatus status;
+    private String cancellationReason;
     @Column(nullable = false, updatable = false)
     @CreatedDate
     private Instant createdAt;
@@ -68,6 +69,21 @@ public class Reservation {
         }
 
         this.status = newStatus;
+    }
+
+    public void cancelByOperator(String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new DomainValidationException("An operator cancellation requires a reason.");
+        }
+        if (this.status == ReservationStatus.CANCELLED) {
+            return; // Already cancelled; keep the original reason.
+        }
+        if (this.status == ReservationStatus.COMPLETED) {
+            throw new InvalidStatusTransitionException(this.status, ReservationStatus.CANCELLED);
+        }
+
+        this.cancellationReason = reason;
+        this.status = ReservationStatus.CANCELLED;
     }
 
     public static Reservation book(User user, BikeInstance bikeInstance, LocalDate startDate, LocalDate endDate, LocalDate currentDate, BigDecimal totalCost) {

@@ -1,6 +1,7 @@
 package com.velocity.api.common.exception;
 
 import com.velocity.api.bike.exception.BikeNotAvailableException;
+import com.velocity.api.bike.exception.BikeUnderActiveRentalException;
 import com.velocity.api.bike.exception.InvalidBikeStateException;
 import com.velocity.api.bike.exception.InvalidBikeStatusTransitionException;
 import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
@@ -15,7 +16,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
@@ -326,8 +327,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem;
     }
 
-    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
-    public ProblemDetail handleAObjectOptimisticLockingFailureException(ObjectOptimisticLockingFailureException ex) {
+    // Registered on the parent, not on ObjectOptimisticLockingFailureException.
+    // Handler matching is by assignability, so a handler declared for the
+    // subclass does not catch a parent thrown by hand — which is what
+    // AdminUserService.updateBikeStatus does to attach its own message.
+    // Registering here still covers the ORM subclass the scheduler sees.
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ProblemDetail handleAObjectOptimisticLockingFailureException(OptimisticLockingFailureException ex) {
         log.warn("Optimistic Locking Failure: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,
@@ -371,6 +377,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 ex.getMessage()
         );
         problem.setTitle("Invalid State Transition");
+        return problem;
+    }
+
+    @ExceptionHandler(BikeUnderActiveRentalException.class)
+    public ProblemDetail handleBikeUnderActiveRentalException(BikeUnderActiveRentalException ex) {
+        log.warn("Bike assigned to active rentals: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problem.setProperty("conflicts", ex.getConflicts());
+        problem.setTitle("Bike Conflicts");
         return problem;
     }
 
