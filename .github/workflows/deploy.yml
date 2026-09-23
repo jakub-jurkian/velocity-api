@@ -1,0 +1,52 @@
+name: CD pipline
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        # QEMU acts as translation layer, tricking runner into thinking it has ARM CPU.
+        uses: docker/setup-qemu-action@v3
+      - name: Set up BUILDX
+        # docker build command installed on Linux doesn't support platforms flag.
+        # buildx is Docker's next-generation build engine that knows how to orchestrate multi-architecture builds.
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          platforms: linux/arm64
+          context: .
+          tags: ghcr.io/jakub-jurkian/velocity-api:latest
+          push: true
+  #its only purpose is to SSH into your OCI machine and run terminal commands
+  deploy-to-oci:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Execute via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: ${{ secrets.OCI_USERNAME }}
+          key: ${{ secrets.OCI_SSH_KEY }}
+          script: |
+            cd ~/velocity-api
+            git pull origin main
+            docker compose -f docker-compose.prod.yaml pull api
+            docker compose -f docker-compose.prod.yaml up -d
