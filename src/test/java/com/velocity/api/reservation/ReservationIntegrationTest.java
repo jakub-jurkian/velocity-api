@@ -1,45 +1,28 @@
 package com.velocity.api.reservation;
 
-import com.velocity.api.BaseIntegrationTest;
+import com.velocity.api.AbstractApiIntegrationTest;
 import com.velocity.api.bike.BikeInstance;
-import com.velocity.api.bike.repository.BikeInstanceRepository;
-import com.velocity.api.bike.repository.BikeModelRepository;
 import com.velocity.api.common.City;
 import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.factory.TestDataFactory;
 import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.user.User;
-import com.velocity.api.user.repository.UserRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.UUID;
 
 import static com.velocity.api.security.SecurityTestHelper.asUser;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@AutoConfigureMockMvc
-@Import(TestDataFactory.class)
-public class ReservationIntegrationTest extends BaseIntegrationTest {
+public class ReservationIntegrationTest extends AbstractApiIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -50,26 +33,6 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private ReservationRepository reservationRepository;
 
-    @Autowired
-    private BikeInstanceRepository bikeInstanceRepository;
-
-    @Autowired
-    private BikeModelRepository bikeModelRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @MockitoBean
-    private Clock clock;
-
-    @AfterEach
-    public void cleanUp() {
-        reservationRepository.deleteAll();
-        bikeInstanceRepository.deleteAll();
-        bikeModelRepository.deleteAll();
-        userRepository.deleteAll();
-    }
-
     @Test
     public void getMyReservations_Unauthenticated_Returns401() throws Exception {
         mockMvc.perform(get("/api/v1/reservations/my")
@@ -79,72 +42,35 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void getMyReservations_AuthenticatedUser_ReturnsOnlyTheirReservations() throws Exception {
-        when(clock.instant()).thenReturn(Instant.parse("2026-09-01T10:00:00Z"));
-        when(clock.getZone()).thenReturn(ZoneId.of("UTC"));
-        // Arrange Setup Database State
+        clock.setInstant("2026-09-01T10:00:00Z");
         User primaryUser = testDataFactory.createAndSaveDefaultUser();
-        // Create a second user to prove we don't leak their data
+        // A second user proves the query does not leak their data
         User otherUser = testDataFactory.createAndSaveUser("other@test.com", "123456789");
 
         BikeInstance bike = testDataFactory.createAndSaveDefaultBike();
 
-        // Primary User makes 2 bookings
         testDataFactory.createAndSaveReservation(
                 primaryUser, bike, LocalDate.parse("2026-09-05"), LocalDate.parse("2026-09-10"), LocalDate.now(clock)
         );
         testDataFactory.createAndSaveReservation(
                 primaryUser, bike, LocalDate.parse("2026-09-10"), LocalDate.parse("2026-09-15"), LocalDate.now(clock)
         );
-
-        // Other User makes 1 booking (using bounds that don't violate our ADR-001 exclusion constraint)
+        // Bounds that don't violate the ADR-001 exclusion constraint
         testDataFactory.createAndSaveReservation(
                 otherUser, bike, LocalDate.parse("2026-09-20"), LocalDate.parse("2026-09-25"), LocalDate.now(clock)
         );
 
-        // Act Perform GET request as primaryUser
         mockMvc.perform(get("/api/v1/reservations/my?page=0&size=10")
                         .with(asUser(String.valueOf(primaryUser.getId()), "CLIENT"))
                         .accept(MediaType.APPLICATION_JSON))
-                // Assert
                 .andExpect(status().isOk())
-                // Verify pagination metadata proves filtering worked at the database level
                 .andExpect(jsonPath("$.meta.totalElements").value(2))
                 .andExpect(jsonPath("$.meta.totalPages").value(1))
-                // Verify the array contains exactly 2 elements
                 .andExpect(jsonPath("$.data.length()").value(2));
     }
 
     @Test
-    public void confirmReservation_AuthorizedUser_Success() throws Exception {
-        when(clock.instant()).thenReturn(Instant.parse("2026-09-01T10:00:00Z"));
-        when(clock.getZone()).thenReturn(ZoneId.of("UTC"));
-        User primaryUser = testDataFactory.createAndSaveDefaultUser();
-        BikeInstance bike = testDataFactory.createAndSaveDefaultBike();
-
-        Reservation reservation = testDataFactory.createAndSaveReservation(
-                primaryUser, bike, LocalDate.parse("2026-09-05"), LocalDate.parse("2026-09-10"), LocalDate.now(clock)
-        );
-
-        UUID reservationId = reservation.getId();
-        UUID primaryUserId = primaryUser.getId();
-
-        // Act confirm request as otherUser
-        mockMvc.perform(post("/api/v1/reservations/%s/confirm".formatted(reservationId))
-                        .with(asUser(String.valueOf(primaryUserId), "CLIENT"))
-                )
-                // Assert
-                .andExpect(status().isNoContent());
-        Reservation freshReservation = reservationRepository.findById(reservationId).orElseThrow(() ->
-                new ResourceNotFoundException("Reservation not found."));
-        assertThat(freshReservation.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
-
-    }
-
-    @Test
     public void book_bikeInAnotherCity_isRefused() throws Exception {
-        // Real time: the request's @Future check reads the system clock
-        when(clock.instant()).thenReturn(Instant.now());
-        when(clock.getZone()).thenReturn(ZoneId.of("Europe/Warsaw"));
         User warsawUser = testDataFactory.createAndSaveDefaultUser();
         BikeInstance gdanskBike = testDataFactory.createAndSaveBike(City.GDANSK);
         LocalDate start = LocalDate.now(clock).plusDays(5);
@@ -162,9 +88,29 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    public void confirmReservation_AuthorizedUser_Success() throws Exception {
+        clock.setInstant("2026-09-01T10:00:00Z");
+        User primaryUser = testDataFactory.createAndSaveDefaultUser();
+        BikeInstance bike = testDataFactory.createAndSaveDefaultBike();
+
+        Reservation reservation = testDataFactory.createAndSaveReservation(
+                primaryUser, bike, LocalDate.parse("2026-09-05"), LocalDate.parse("2026-09-10"), LocalDate.now(clock)
+        );
+
+        UUID reservationId = reservation.getId();
+
+        mockMvc.perform(post("/api/v1/reservations/%s/confirm".formatted(reservationId))
+                        .with(asUser(String.valueOf(primaryUser.getId()), "CLIENT"))
+                )
+                .andExpect(status().isNoContent());
+        Reservation freshReservation = reservationRepository.findById(reservationId).orElseThrow(() ->
+                new ResourceNotFoundException("Reservation not found."));
+        assertThat(freshReservation.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+    }
+
+    @Test
     public void confirmReservation_afterConfirmationWindow_isRefused() throws Exception {
-        when(clock.instant()).thenReturn(Instant.parse("2026-09-01T10:00:00Z"));
-        when(clock.getZone()).thenReturn(ZoneId.of("UTC"));
+        clock.setInstant("2026-09-01T10:00:00Z");
         User user = testDataFactory.createAndSaveDefaultUser();
         BikeInstance bike = testDataFactory.createAndSaveDefaultBike();
         Reservation reservation = testDataFactory.createAndSaveReservation(
@@ -172,7 +118,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         );
 
         // 31 minutes later, before the scheduler has swept it
-        when(clock.instant()).thenReturn(Instant.parse("2026-09-01T10:31:00Z"));
+        clock.setInstant("2026-09-01T10:31:00Z");
         mockMvc.perform(post("/api/v1/reservations/%s/confirm".formatted(reservation.getId()))
                         .with(asUser(user.getId().toString(), "CLIENT")))
                 .andExpect(status().is(422))
@@ -184,8 +130,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void confirmReservation_reservationOfAnotherUser_returnsNotFound() throws Exception {
-        when(clock.instant()).thenReturn(Instant.parse("2026-09-01T10:00:00Z"));
-        when(clock.getZone()).thenReturn(ZoneId.of("UTC"));
+        clock.setInstant("2026-09-01T10:00:00Z");
         User primaryUser = testDataFactory.createAndSaveDefaultUser();
         User otherUser = testDataFactory.createAndSaveUser("other@test.com", "123456789");
         BikeInstance bike = testDataFactory.createAndSaveDefaultBike();
@@ -195,19 +140,16 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         );
 
         UUID reservationId = reservation.getId();
-        UUID otherUserId = otherUser.getId();
-
 
         mockMvc.perform(post("/api/v1/reservations/%s/confirm".formatted(reservationId))
-                        .with(asUser(String.valueOf(otherUserId), "CLIENT"))
+                        .with(asUser(String.valueOf(otherUser.getId()), "CLIENT"))
                 )
-                // Assert: a reservation the caller does not own is indistinguishable from
+                // A reservation the caller does not own is indistinguishable from
                 // one that does not exist, so the row's existence is never confirmed.
                 .andExpect(status().isNotFound());
 
         Reservation freshReservation = reservationRepository.findById(reservationId).orElseThrow(() ->
                 new ResourceNotFoundException("Reservation not found."));
         assertThat(freshReservation.getStatus()).isEqualTo(ReservationStatus.PENDING);
-
     }
 }

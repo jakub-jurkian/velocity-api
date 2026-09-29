@@ -1,12 +1,8 @@
 package com.velocity.api;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
-@ActiveProfiles("test")
-class VelocityApiApplicationTests extends BaseIntegrationTest {
+class VelocityApiApplicationTests extends AbstractApiIntegrationTest {
 
     @Test
     void contextLoads() {

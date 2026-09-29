@@ -21,13 +21,11 @@ import java.util.UUID;
 @TestComponent
 @RequiredArgsConstructor
 public class TestDataFactory {
-    // Inject repositories via constructor
     private final UserRepository userRepository;
     private final BikeModelRepository bikeModelRepository;
     private final BikeInstanceRepository bikeInstanceRepository;
     private final ReservationRepository reservationRepository;
 
-    // Create reusable methods
     public User createAndSaveDefaultUser() {
         User testUser = User.registerClient(
                 "test.user@velocity.com",

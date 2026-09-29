@@ -1,36 +1,36 @@
 package com.velocity.api.user.controller;
 
-import com.velocity.api.BaseIntegrationTest;
-import com.velocity.api.user.service.UserService;
+import com.velocity.api.AbstractApiIntegrationTest;
+import com.velocity.api.factory.TestDataFactory;
+import com.velocity.api.user.User;
+import com.velocity.api.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
 import static com.velocity.api.security.SecurityTestHelper.asUser;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-public class UserControllerTest extends BaseIntegrationTest {
+public class UserControllerTest extends AbstractApiIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
-    @MockitoBean
-    private UserService userService;
+    @Autowired
+    private TestDataFactory testDataFactory;
+    @Autowired
+    private UserRepository userRepository;
 
     @Test
     public void updateProfile_differentUser_returnsForbidden() throws Exception {
+        User victim = testDataFactory.createAndSaveDefaultUser();
         UUID hackerId = UUID.randomUUID();
-        UUID victimId = UUID.randomUUID();
 
         mockMvc.perform(
-                        patch("/api/v1/users/" + victimId)
+                        patch("/api/v1/users/" + victim.getId())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                          { "fullName": "Hacked Name" }
@@ -39,21 +39,25 @@ public class UserControllerTest extends BaseIntegrationTest {
                 )
                 .andExpect(status().isForbidden());
 
+        assertThat(userRepository.findById(victim.getId()).orElseThrow().getFullName())
+                .isEqualTo(victim.getFullName());
     }
 
     @Test
     public void updateProfile_sameUser_returnsNoContent() throws Exception {
-        UUID userId = UUID.randomUUID();
+        User user = testDataFactory.createAndSaveDefaultUser();
 
         mockMvc.perform(
-                        patch("/api/v1/users/" + userId)
+                        patch("/api/v1/users/" + user.getId())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                          { "fullName": "Changed Name" }
                                         """)
-                                .with(asUser(userId.toString(), "CLIENT"))
+                                .with(asUser(user.getId().toString(), "CLIENT"))
                 )
                 .andExpect(status().isNoContent());
 
+        assertThat(userRepository.findById(user.getId()).orElseThrow().getFullName())
+                .isEqualTo("Changed Name");
     }
 }

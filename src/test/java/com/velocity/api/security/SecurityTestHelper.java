@@ -22,7 +22,7 @@ public class SecurityTestHelper {
                 "password-not-needed",
                 City.GDANSK,
                 UserStatus.ACTIVE,
-                UserRole.CLIENT,
+                UserRole.valueOf(role),
                 List.of(new SimpleGrantedAuthority("ROLE_" + role))
         );
 
