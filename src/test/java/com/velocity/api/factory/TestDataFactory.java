@@ -6,6 +6,7 @@ import com.velocity.api.bike.BikeModel;
 import com.velocity.api.bike.repository.BikeInstanceRepository;
 import com.velocity.api.bike.repository.BikeModelRepository;
 import com.velocity.api.common.City;
+import com.velocity.api.reservation.RentalPeriod;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.user.User;
@@ -50,6 +51,10 @@ public class TestDataFactory {
     }
 
     public BikeInstance createAndSaveDefaultBike() {
+        return createAndSaveBike(City.WARSAW);
+    }
+
+    public BikeInstance createAndSaveBike(City city) {
         BikeModel testModel = BikeModel.create(
                 "Integration Test Model " + UUID.randomUUID(),
                 "Test description",
@@ -60,7 +65,7 @@ public class TestDataFactory {
         );
         bikeModelRepository.save(testModel);
 
-        BikeInstance testBike = BikeInstance.initialize(testModel, City.WARSAW);
+        BikeInstance testBike = BikeInstance.initialize(testModel, city);
         return bikeInstanceRepository.save(testBike);
     }
 
@@ -68,8 +73,7 @@ public class TestDataFactory {
         Reservation normalReservation = Reservation.book(
                 user,
                 bikeInstance,
-                startDate,
-                endDate,
+                new RentalPeriod(startDate, endDate),
                 currentDate,
                 BigDecimal.ONE
         );

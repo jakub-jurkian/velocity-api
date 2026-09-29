@@ -1,7 +1,7 @@
 package com.velocity.api.reservation.controller;
 
 import com.velocity.api.common.dto.PaginatedResponse;
-import com.velocity.api.common.exception.DomainValidationException;
+import com.velocity.api.reservation.RentalPeriod;
 import com.velocity.api.reservation.dto.*;
 import com.velocity.api.reservation.service.ReservationService;
 import com.velocity.api.security.CustomUserDetails;
@@ -17,7 +17,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @RestController
@@ -43,11 +42,7 @@ public class ReservationController {
             description = "Returns a list of bike models available within the specified date range and target city, taking into account the user's location."
     )
     public ResponseEntity<AvailabilityResponse> getAvailableModels(@RequestParam LocalDate startDate, @RequestParam LocalDate endDate, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        int days = Math.toIntExact(ChronoUnit.DAYS.between(startDate, endDate));
-        if (days < 3 || days > 21) {
-            throw new DomainValidationException("Rental duration must be between 3 and 21 days.");
-        }
-        AvailabilityResponse response = reservationService.getAvailableModels(startDate, endDate, userDetails.getCity());
+        AvailabilityResponse response = reservationService.getAvailableModels(new RentalPeriod(startDate, endDate), userDetails.getCity());
         return ResponseEntity.ok(response);
     }
 

@@ -1,5 +1,6 @@
 package com.velocity.api.reservation.scheduler;
 
+import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
 import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.reservation.service.ReservationService;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,11 +26,11 @@ public class ReservationLifecycleScheduler {
 
     @Scheduled(fixedRateString = "${scheduling.pending-cadence:PT5M}")
     public void cancelStalePendingReservations() {
-        Instant cutoff = Instant.now(clock).minus(30, ChronoUnit.MINUTES);
+        Instant cutoff = Instant.now(clock).minus(Reservation.CONFIRMATION_WINDOW);
         List<UUID> stalePendingReservationIds = reservationRepository.findStalePendingReservationsIds(ReservationStatus.PENDING, cutoff);
         for (UUID id : stalePendingReservationIds) {
             try {
-                reservationService.cancelStaleReservation(id);
+                reservationService.expireStaleReservation(id);
             } catch (ObjectOptimisticLockingFailureException e) {
                 log.warn("Reservation {} already modified.", id);
             } catch (Exception e) {

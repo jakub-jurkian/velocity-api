@@ -1,5 +1,7 @@
 package com.velocity.api.bike;
 
+import com.velocity.api.bike.exception.BikeInOtherCityException;
+import com.velocity.api.bike.exception.InvalidBikeStateException;
 import com.velocity.api.bike.exception.InvalidBikeStatusTransitionException;
 import com.velocity.api.common.City;
 import com.velocity.api.common.exception.DomainValidationException;
@@ -41,6 +43,19 @@ public class BikeInstance {
         this.bikeModel = requireNonNull(bikeModel, "BikeModel");
         this.city = requireNonNull(city, "City");
         this.status = BikeStatus.ACTIVE; // Default state for a new physical bike
+    }
+
+    /**
+     * Whether a client from {@code clientCity} may book this bike. Date availability is a
+     * separate question, answered by the reservations table.
+     */
+    public void assertBookableIn(City clientCity) {
+        if (this.status != BikeStatus.ACTIVE) {
+            throw new InvalidBikeStateException("The bike does not have ACTIVE status.");
+        }
+        if (this.city != clientCity) {
+            throw new BikeInOtherCityException("The bike is not available in your city.");
+        }
     }
 
     public void transitionTo(BikeStatus newStatus) {

@@ -138,7 +138,7 @@
                 -- ── Scripted demo bikes (all WARSAW, all reachable from client@velocity.com) ──
                 -- DEMO-1: ACTIVE, rental under way right now. Taking it off the road returns 409
                 -- with the conflicting rental; ?force=true cancels that rental through
-                -- cancelByOperator, which is the only path the late-cancel rule does not block.
+                -- cancelByOperator, the operator path, which the late-cancel rule does not block.
                 ('00000000-0000-4000-8000-000000000001', 'WARSAW', 'ACTIVE', 'b8f4c2e1-9a3d-47c2-8f1e-6d5c4b3a2f1e', 0),
                 -- DEMO-2: ACTIVE, rental starts in 2 days. Same 409, but the casualty of a
                 -- forced change is a booking that has not begun.
@@ -277,8 +277,8 @@
                       ('a0000000-0000-4000-8000-000000000010', 3,  3, 21, 'COMPLETED', NULL, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000007'),
                       ('a0000000-0000-4000-8000-000000000011', 3,  5,  6, 'COMPLETED', NULL, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '22222222-2222-4222-8222-000000000003'),
                       ('a0000000-0000-4000-8000-000000000012', 3, 12,  9, 'COMPLETED', NULL, '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '00000000-0000-4000-8000-000000000001'),
-                      -- The one operator cancellation in the history. cancelByOperator is the only
-                      -- path that fills cancellation_reason, and this is the string it writes.
+                      -- The one operator cancellation in the history. This is the string
+                      -- cancelByOperator writes when a bike goes to MAINTENANCE.
                       ('a0000000-0000-4000-8000-000000000013', 3, 20,  4, 'CANCELLED', 'Cancelled by Admin: Bike transitioned to MAINTENANCE', '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', '11111111-1111-4111-8111-000000000001'),
 
                       ('a0000000-0000-4000-8000-000000000014', 2,  1, 12, 'COMPLETED', NULL, 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '22222222-2222-4222-8222-000000000005'),

@@ -1,11 +1,13 @@
 package com.velocity.api.common.exception;
 
+import com.velocity.api.bike.exception.BikeInOtherCityException;
 import com.velocity.api.bike.exception.BikeNotAvailableException;
 import com.velocity.api.bike.exception.BikeUnderActiveRentalException;
 import com.velocity.api.bike.exception.InvalidBikeStateException;
 import com.velocity.api.bike.exception.InvalidBikeStatusTransitionException;
 import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
 import com.velocity.api.reservation.exception.LateCancelException;
+import com.velocity.api.reservation.exception.ReservationExpiredException;
 import com.velocity.api.security.exception.InvalidTokenException;
 import com.velocity.api.user.exception.CannotDemoteSelfException;
 import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
@@ -416,6 +418,28 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
         problem.setProperty("conflicts", ex.getConflicts());
         problem.setTitle("Bike Conflicts");
+        return problem;
+    }
+
+    @ExceptionHandler(BikeInOtherCityException.class)
+    public ProblemDetail handleBikeInOtherCityException(BikeInOtherCityException ex) {
+        log.warn("Booking outside the client's city: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNPROCESSABLE_CONTENT,
+                ex.getMessage()
+        );
+        problem.setTitle("Bike In Another City");
+        return problem;
+    }
+
+    @ExceptionHandler(ReservationExpiredException.class)
+    public ProblemDetail handleReservationExpiredException(ReservationExpiredException ex) {
+        log.warn("Confirmation after the window closed: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNPROCESSABLE_CONTENT,
+                ex.getMessage()
+        );
+        problem.setTitle("Reservation Expired");
         return problem;
     }
 

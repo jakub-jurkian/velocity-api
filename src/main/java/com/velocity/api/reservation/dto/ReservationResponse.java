@@ -14,9 +14,9 @@ public record ReservationResponse(
         ReservationStatus status,
         /**
          * Null for a self-cancellation. Populated only when someone else ended
-         * the booking — today that means an admin taking the bike off the road
-         * — so the client can tell "you cancelled this" apart from "we did",
-         * and explain why.
+         * the booking — an admin taking the bike off the road, or the system
+         * expiring a reservation that was never confirmed — so the client can
+         * tell "you cancelled this" apart from "we did", and explain why.
          */
         String cancellationReason,
         BikeSummary bike
