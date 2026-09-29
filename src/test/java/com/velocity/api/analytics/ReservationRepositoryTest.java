@@ -6,6 +6,7 @@ import com.velocity.api.bike.BikeInstance;
 import com.velocity.api.bike.BikeModel;
 import com.velocity.api.common.City;
 import com.velocity.api.config.ClockConfig;
+import com.velocity.api.reservation.RentalPeriod;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
 import com.velocity.api.reservation.repository.ReservationRepository;
@@ -72,8 +73,7 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
         Reservation res1 = Reservation.book(
                 user,
                 instance,
-                LocalDate.of(2026, 9, 5),
-                LocalDate.of(2026, 9, 10),
+                new RentalPeriod(LocalDate.of(2026, 9, 5), LocalDate.of(2026, 9, 10)),
                 LocalDate.now(clock),
                 new BigDecimal("125.00")
         );
@@ -84,8 +84,7 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
         Reservation res2 = Reservation.book(
                 user,
                 instance,
-                LocalDate.of(2026, 9, 15),
-                LocalDate.of(2026, 9, 20),
+                new RentalPeriod(LocalDate.of(2026, 9, 15), LocalDate.of(2026, 9, 20)),
                 LocalDate.now(clock),
                 new BigDecimal("125.00")
         );
@@ -95,8 +94,7 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
         Reservation res3 = Reservation.book(
                 user,
                 instance,
-                LocalDate.of(2026, 9, 25),
-                LocalDate.of(2026, 9, 30),
+                new RentalPeriod(LocalDate.of(2026, 9, 25), LocalDate.of(2026, 9, 30)),
                 LocalDate.now(clock),
                 new BigDecimal("125.00")
         );
@@ -105,8 +103,7 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
         Reservation res4 = Reservation.book(
                 user,
                 instance,
-                LocalDate.of(2026, 10, 5),
-                LocalDate.of(2026, 10, 10),
+                new RentalPeriod(LocalDate.of(2026, 10, 5), LocalDate.of(2026, 10, 10)),
                 LocalDate.now(clock),
                 new BigDecimal("125.00")
         );

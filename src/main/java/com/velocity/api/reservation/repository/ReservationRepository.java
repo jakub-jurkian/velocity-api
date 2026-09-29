@@ -31,7 +31,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
             """)
     boolean isBikeAvailable(@Param("bikeId") UUID bikeId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT r.id FROM Reservation r WHERE r.status = :status AND r.createdAt < :cutoff")
+    // Inclusive, to agree with Reservation.confirm(): at exactly 30 minutes a reservation can no
+    // longer be confirmed, so the sweep must be allowed to expire it.
+    @Query("SELECT r.id FROM Reservation r WHERE r.status = :status AND r.createdAt <= :cutoff")
     List<UUID> findStalePendingReservationsIds(@Param("status") ReservationStatus status, @Param("cutoff") Instant cutoff);
 
     @Query("SELECT r.id FROM Reservation r WHERE r.status = :status AND r.endDate < :today")

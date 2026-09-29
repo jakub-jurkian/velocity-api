@@ -83,6 +83,27 @@ public class ReservationSchedulerIntegrationTest extends BaseIntegrationTest {
         // Assert
         assertEquals(ReservationStatus.PENDING, updatedNormalReservation.getStatus());
         assertEquals(ReservationStatus.CANCELLED, updatedStaleReservation.getStatus());
+        assertEquals("Not confirmed within 30 minutes", updatedStaleReservation.getCancellationReason());
+    }
+
+    @Test
+    public void cancelStalePendingReservations_goesStaleAfterMidnightOnItsStartDate_isStillCancelled() {
+        when(clock.getZone()).thenReturn(ZoneId.of("Europe/Warsaw"));
+        // 23:50 in Warsaw on 4 September: booked for the next day
+        when(clock.instant()).thenReturn(Instant.parse("2026-09-04T21:50:00Z"));
+        User testUser = testDataFactory.createAndSaveDefaultUser();
+        BikeInstance testBike = testDataFactory.createAndSaveDefaultBike();
+        Reservation lateEveningBooking = testDataFactory.createAndSaveReservation(
+                testUser, testBike, LocalDate.parse("2026-09-05"), LocalDate.parse("2026-09-10"), LocalDate.now(clock)
+        );
+
+        // 00:20 in Warsaw: stale, and its start date is already today. The customer's
+        // late-cancel rule must not keep it PENDING (and blocking the bike) forever.
+        when(clock.instant()).thenReturn(Instant.parse("2026-09-04T22:20:00Z"));
+        scheduler.cancelStalePendingReservations();
+
+        Reservation updated = reservationRepository.findById(lateEveningBooking.getId()).orElseThrow();
+        assertEquals(ReservationStatus.CANCELLED, updated.getStatus());
     }
 
     @Test

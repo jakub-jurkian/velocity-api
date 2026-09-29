@@ -65,7 +65,7 @@ public class ReservationConcurrencyIntegrationTest extends BaseIntegrationTest {
         // force the hardcoded user into DB cause id is hardcoded in controller right now
         // User savedUser = userRepository.save(new User("test@test.com", "xf843fd23iom4r", "Test", "+48000000000", UserRole.CLIENT, City.GDANSK));
         BikeModel savedBikeModel = bikeModelRepository.save(BikeModel.create("Test", "Test", 45, 100, 50, BikeCategory.AGILITY));
-        BikeInstance savedBikeInstance = bikeInstanceRepository.save(BikeInstance.initialize(savedBikeModel, City.GDANSK));
+        BikeInstance savedBikeInstance = bikeInstanceRepository.save(BikeInstance.initialize(savedBikeModel, City.WARSAW));
         bikeInstanceId = savedBikeInstance.getId();
 
         UserDetails userDetails = customUserDetailsService.loadUserByUsername("test@test.com");
