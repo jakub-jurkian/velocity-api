@@ -1,6 +1,6 @@
 # VeloCity Fleet API — Project Context
 
-Last updated: 2026-09-21
+Last updated: 2026-09-26
 
 This file is the single source of truth for the project. It reflects the repo state, the architectural decisions captured in ADRs, and the current implementation status for the backend service that powers the VeloCity frontend.
 
@@ -8,26 +8,15 @@ Per ADR-003 this file is living documentation: it is updated at the end of each 
 
 ## 0. Where the code actually is
 
-Reading this section first will save confusion, because the work is currently spread across three places.
+**`main` @ `58865fc`** (= `origin/main`) — everything through PR #118 plus the CD pipeline commit. There are no unmerged branches and no uncommitted work; everything below describes `main`.
 
-**`main` @ `fc211bb`** (= `origin/main`) — everything through PR #113. This is the baseline everything below describes unless stated otherwise.
+The earlier split (the bike-status conflict guard uncommitted, the pre-deploy hardening on a separate branch) is resolved: #115 merged the conflict guard, #116 merged the hardening, #118 added the deployment setup.
 
-**Uncommitted on `main`** — the admin bike-status conflict guard and reservation cancellation reasons. Described in section 8a. Compiles and the suite passes; it has no tests of its own.
+**Deployed.** The `prod` profile runs on an Oracle Cloud (OCI) ARM VM behind Caddy:
+- API: `https://api.velocityfleet.dev` (Swagger UI at `/api/swagger-ui.html`)
+- frontend: `https://www.velocityfleet.dev` (Vercel, repo `velocity-client`)
 
-**`chore/pre-deploy-hardening` @ `0562dd6`, not merged** — a batch of pre-deploy fixes that are therefore **not** true of `main`. Until this lands, `main` still has all of the following:
-- `ddl-auto: validate` sitting under `spring.jpa.properties.hibernate`, where it is silently ignored — there is no schema validation at startup
-- `Clock.systemDefaultZone()`, so date boundaries follow the host timezone
-- no Redis command/connect timeouts and no failure handling on the blacklist read
-- an unrecognised `DataIntegrityViolationException` mapping to 409 rather than a logged 500
-- no SQLState `23P01` fallback in `extractConstraintName`, so the `no_overlapping_active_reservations` mapping never actually matches and the overlap 409 comes from the blanket default
-- no `CannotAcquireLockException` handler
-- `BadCredentialsException` echoing Spring's literal `"Bad credentials"` string to the client
-- registration reporting a different duplicate-email message than the constraint mapping
-- no composition rule on `UserRegistrationRequest.password`
-- the unused `pricing/exception/InvalidRentalDurationException`
-- a plaintext password in `src/main/resources/liquibase.yml`
-
-That branch also carries the previous rewrite of this document.
+Every push to `main` builds a `linux/arm64` image, pushes it to GHCR, and redeploys over SSH (`.github/workflows/deploy.yml`).
 
 ## 1. Project goal
 
@@ -45,7 +34,7 @@ The core product workflow is:
 
 ## 2. Current implementation status
 
-Feature-complete for the demo flow. The error contract is settled, the concurrency guarantee is in place and proven by test, and the domain model enforces its own invariants. Nothing is deployed.
+Feature-complete for the demo flow and deployed. The error contract is settled, the concurrency guarantee is in place and proven by test, and the domain model enforces its own invariants. The 2026-09-24 review found several open defects; they are listed in section 13.
 
 Implemented on `main`:
 - JWT authentication with per-request account-status enforcement
@@ -53,17 +42,21 @@ Implemented on `main`:
 - user registration, login, logout, profile updates, admin user lifecycle
 - fleet counts and date-range availability with server-side pricing
 - reservation creation, ownership checks, lifecycle transitions, scheduled jobs
+- admin bike-status changes with optimistic locking and a conflict guard (section 8a)
 - admin analytics aggregates
 - ProblemDetail error handling, including 401/403 semantics and framework-level 4xx mapping
 - Postgres-backed reservation integrity via an exclusion constraint
 - `PricingProperties` as a validated `@ConfigurationProperties` record
+- Actuator health endpoint (`/actuator/health`, details hidden)
+- multi-stage Dockerfile (non-root runtime user, `prod` profile pinned), production Compose stack, Caddy reverse proxy
+- a `prod`-context demo seed that re-anchors itself to the current date on every boot (see DEMO.md)
 - concurrency, integration, repository and domain tests on Testcontainers (61 tests, green)
 
 Not implemented:
-- Dockerfile, deployment, Actuator, health endpoint, structured logging
+- structured logging, request/correlation IDs
 - rate limiting on the auth endpoints
-- a production seed — see section 13, this blocks a usable deploy
-- tests for `AdminUserService`, `AnalyticsService`, `cancelReservation`, and the availability query
+- refresh tokens
+- tests for `AdminUserService`/`AdminUserController`, `BikeInstance` transitions, `AnalyticsService`, `cancelReservation`, logout revocation, and the availability query
 
 ## 3. Tech stack
 
@@ -78,8 +71,9 @@ Not implemented:
 - Springdoc OpenAPI / Swagger UI
 - Maven
 - JUnit 5 + Mockito + Spring test support + Testcontainers
-- Docker Compose (Postgres + Redis only; the app itself is not containerised)
-- GitHub Actions
+- Spring Boot Actuator (health only)
+- Docker: `docker-compose.yaml` runs Postgres + Redis for local dev; `docker-compose.prod.yaml` runs the API image, Postgres, Redis and Caddy in production
+- GitHub Actions: `ci.yml` (tests on push/PR), `deploy.yml` (build arm64 image → GHCR → SSH deploy to OCI)
 
 Runtime conventions:
 - `spring.profiles.default: dev`, so `./mvnw spring-boot:run` works with no extra flags. A deployment must set `SPRING_PROFILES_ACTIVE=prod` explicitly; with it unset the app falls back to `dev` and dies against `localhost:5432` with a misleading connection error.
@@ -118,7 +112,7 @@ Architectural rules visible in the codebase:
 - repositories handle data access
 - entities protect their own invariants
 - DTOs are used at the API boundary; entities never leak to the web layer
-- global error handling returns RFC 7807 ProblemDetail payloads
+- global error handling returns RFC 9457 (formerly RFC 7807) ProblemDetail payloads
 - method security enforces owner and admin use cases
 
 ## 5. Domain model
@@ -143,21 +137,24 @@ Created via `BikeModel.create(...)`. Ranges validated in the entity (speed 1-45,
 
 ### BikeInstance
 Fields: `id`, `status`, `city`, `bikeModel` (LAZY `@ManyToOne`), `version` (`@Version`, private).
-`BikeStatus`: ACTIVE, MAINTENANCE, LOST, RETIRED. Created via `BikeInstance.initialize(...)`, defaults to ACTIVE. Booking is only allowed when ACTIVE. `transitionTo(...)` refuses to move a RETIRED bike and forces a LOST bike through MAINTENANCE first.
+`BikeStatus`: ACTIVE, MAINTENANCE, LOST, RETIRED. Created via `BikeInstance.initialize(...)`, defaults to ACTIVE. `assertBookableIn(clientCity)` allows booking only an ACTIVE bike in the client's own city (`InvalidBikeStateException` / `BikeInOtherCityException`, both 422). `transitionTo(...)` refuses to move a RETIRED bike and forces a LOST bike through MAINTENANCE first.
 
 ### Reservation
-Fields: `id`, `startDate`, `endDate`, `totalCost` (BigDecimal), `status`, `cancellationReason` (nullable String, uncommitted), `createdAt` (Instant, `@CreatedDate`), `user` (LAZY), `bikeInstance` (LAZY), `version` (`@Version`).
+Fields: `id`, `startDate`, `endDate`, `totalCost` (BigDecimal), `status`, `cancellationReason` (nullable String), `createdAt` (Instant, `@CreatedDate`), `user` (LAZY), `bikeInstance` (LAZY), `version` (`@Version`).
 
 `ReservationStatus`: PENDING, CONFIRMED, COMPLETED, CANCELLED.
 
 Rules:
-- created via `Reservation.book(...)`; duration must be 3-21 days; start date must be strictly in the future
+- created via `Reservation.book(user, bike, RentalPeriod, currentDate, totalCost)`; start date must be strictly in the future
+- `RentalPeriod(startDate, endDate)` is the single home of the date rules: both dates required, end after start, 3-21 days (`MIN_DAYS`/`MAX_DAYS`). The booking request's `@AssertTrue` checks, the availability endpoint and the entity all use it
 - null arguments are rejected before any value-based validation runs
-- lifecycle enforced by `Reservation.transitionTo(newStatus, currentDate)`, with an overload taking a cancellation reason
-- a cancellation reason is only accepted alongside a transition to CANCELLED; anything else throws `DomainValidationException`
-- same-status transition is a deliberate no-op
-- cancelling on or after `startDate` throws `LateCancelException` (422) — this applies to the admin force-cancel path too, see section 13
+- state machine enforced by `Reservation.transitionTo(newStatus, currentDate)`; same-status transition is a deliberate no-op
+- cancelling through `transitionTo` on or after `startDate` throws `LateCancelException` (422)
 - invalid transitions throw `InvalidStatusTransitionException` (422)
+- `confirm(now)` is the customer's confirmation: refused with `ReservationExpiredException` (422) once `CONFIRMATION_WINDOW` (30 minutes from `createdAt`) has passed, even if the scheduler has not expired the row yet
+- `expire(now)` is the system path for unconfirmed bookings: skips the late-cancel rule, records the reason `"Not confirmed within 30 minutes"`, and is a no-op if the reservation already left PENDING
+- `cancelByOperator(reason)` is the operator path: it requires a non-blank reason, skips the late-cancel rule (so a rental already under way can be cancelled), is a no-op on an already-cancelled reservation, and refuses a COMPLETED one
+- `cancellationReason` is written only by `expire` and `cancelByOperator`; a customer's own cancellation leaves it null
 
 ### Enums shared
 `City`: GDANSK, WROCLAW, WARSAW, POZNAN. `UserRole`: CLIENT, ADMIN. `BikeCategory`: AGILITY, HEAVY_DUTY, DUAL_BATTERY.
@@ -191,16 +188,20 @@ Stateless JWT authentication.
 
 - `SecurityConfig`: CSRF disabled, `SessionCreationPolicy.STATELESS`, CORS from the `cors.allowed-origins` property, `@EnableMethodSecurity`
 - `JwtService` decodes the signing key and builds the `JwtParser` once in its constructor and exposes a single `parseClaims(...)`. A request therefore verifies the signature exactly once.
-- token claims: subject is the email, plus a random `jti`. There are no `userId` or `role` claims — authorities and account status are re-read from the database every request.
+- token claims: subject is the email, plus a random `jti`. There are no `userId` or `role` claims — authorities and account status are re-read from the database every request. Using the (mutable) email as the subject is an open defect, see section 13.
 - `JwtAuthenticationFilter`: extracts the bearer token, verifies it, checks the `jti` against the Redis blacklist, loads `UserDetails`, and refuses blocked accounts via `isAccountNonLocked()`. Failures are handed to the `handlerExceptionResolver`, so they surface as ProblemDetail from `GlobalExceptionHandler` rather than as raw servlet errors.
 - `DelegatingAuthenticationEntryPoint` and `DelegatingAccessDeniedHandler` route unauthenticated and forbidden requests through the same resolver, so a missing token returns **401** and an insufficient role returns **403**, both as ProblemDetail.
 - `CustomUserDetailsService` resolves authorities as `ROLE_<UserRole>` from persisted data
 - BCrypt password hashing
 - On logout, Redis blacklists the token's `jti` for its remaining TTL
+- invalid, expired or revoked tokens raise `InvalidTokenException` (401 "session no longer valid"), kept separate from `BadCredentialsException`, which only the login path raises
+- Redis has 200 ms command/connect timeouts. The blacklist **read** fails open (logged, request proceeds); the blacklist **write** on logout fails loudly with `TokenRevocationUnavailableException` (**503**), so a logout that could not be recorded is not reported as a success
+- Redis is excluded from `/actuator/health` (`management.health.redis.enabled: false`), consistent with failing open: a Redis outage does not mark the API as down
+- the login response's `expiresIn` is in seconds
 
 Because authorities and account status are re-read from the database on every request, blocking a user takes effect immediately rather than when their token expires.
 
-Password policy on `main` is length only: `@Size(min = 8, max = 64)`. There is no composition rule and no password-change endpoint. The token TTL is 24 hours.
+Password policy: `@Size(min = 8, max = 64)` plus a composition rule (upper, lower, digit, special character), mirrored in the frontend's `validators.ts`. There is no password-change endpoint. The token TTL is 24 hours and there are no refresh tokens.
 
 Public endpoints: `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, and the Swagger/OpenAPI paths. Everything else requires authentication.
 
@@ -214,30 +215,30 @@ State machine:
 - CANCELLED and COMPLETED are terminal
 
 Automation (`ReservationLifecycleScheduler`):
-- stale PENDING reservations older than 30 minutes are auto-cancelled; cadence from `scheduling.pending-cadence` (default `PT5M`)
+- PENDING reservations at least `Reservation.CONFIRMATION_WINDOW` (30 minutes) old are expired through `Reservation.expire`, not the customer cancel path, so a booking that goes stale after midnight on its own start date is still released; cadence from `scheduling.pending-cadence` (default `PT5M`)
 - CONFIRMED reservations whose `endDate` has passed are auto-completed; schedule from `scheduling.reservation.completion-cron` (default `0 0 1 * * ?`)
 - both jobs read time from the injected `Clock`
 - each id is processed in its own transaction; `ObjectOptimisticLockingFailureException` is caught per item and logged so one conflict cannot abort the batch
 - scheduling is gated by `@ConditionalOnProperty("scheduling.enabled")` on `SchedulingConfig` and switched off in the test profile so it cannot race integration tests
 
-Booking path (`ReservationService.book`): load user and bike, reject non-ACTIVE bikes, run a service-level availability pre-check, price the rental, then save. The pre-check is UX only; the database constraint is the guarantee.
+Booking path (`ReservationService.book`): load user and bike, `bike.assertBookableIn(user.getCity())`, run a service-level availability pre-check, price the rental from `RentalPeriod.days()`, then save. The pre-check is UX only; the database constraint is the guarantee. `POST /reservations` returns 201 with a `Location` header pointing at `GET /reservations/{id}`.
 
-Ownership: `confirmReservation` and `cancelReservation` load via `findByIdAndUserId(...)`, so a reservation belonging to another user returns **404** rather than confirming the row exists.
+Ownership: `getUserReservation`, `confirmReservation` and `cancelReservation` load via `findByIdAndUserId(...)`, so a reservation belonging to another user returns **404** rather than confirming the row exists.
 
-## 8a. Admin bike-status conflict guard (uncommitted)
+## 8a. Admin bike-status conflict guard (merged in #115)
 
-Taking a bike out of service used to silently strand whatever reservations were on it. The work in progress closes that.
+Taking a bike out of service used to silently strand whatever reservations were on it. This closes that.
 
-- `ReservationRepository.findActiveConflictsForBike(bikeId, currentDate)` returns PENDING or CONFIRMED reservations on that bike whose `endDate` is still in the future, with the user `JOIN FETCH`ed so the email is available without a lazy load.
-- `AdminUserService.updateBikeStatus(bikeId, status, version, force)` runs that query whenever the target status is not ACTIVE.
+- `FleetService.updateBikeStatus(bikeId, status, version, force)` (called from `AdminFleetController`, `@PreAuthorize("hasRole('ADMIN')")` on both the controller and the service method) first compares the `version` sent by the client with the loaded bike; a mismatch throws `OptimisticLockingFailureException` (**409**, handler registered on the parent type so both the hand-thrown and ORM variants match).
+- `ReservationRepository.findActiveConflictsForBike(bikeId, currentDate)` returns PENDING or CONFIRMED reservations on that bike whose `endDate` is still in the future, with the user `JOIN FETCH`ed so the email is available without a lazy load. It runs whenever the target status is not ACTIVE.
   - `force=false` (default): throws `BikeUnderActiveRentalException` carrying a `List<ConflictDto>`.
-  - `force=true`: cancels each conflict with the reason `"Cancelled by Admin: Bike transitioned to <status>"`, then applies the status change.
+  - `force=true`: cancels each conflict through `Reservation.cancelByOperator` with the reason `"Cancelled by Admin: Bike transitioned to <status>"`, then applies the status change. `cancelByOperator` skips the late-cancel rule, so rentals already under way can be cancelled — which is the case this path exists for.
 - `ConflictDto(UUID reservationId, String userEmail, LocalDate startDate, LocalDate endDate)`.
 - `GlobalExceptionHandler` maps `BikeUnderActiveRentalException` to **409** with the conflict list attached as a `conflicts` property on the ProblemDetail, so the admin UI can list exactly what it is about to cancel.
 - `PATCH /api/v1/admin/bikes/{id}/status` takes `?force=true|false`, defaulting to false.
 - Changelog `012` adds a nullable `cancellation_reason VARCHAR(255)` to `reservations`.
 
-Two defects in this path are recorded in section 13.
+Still open: the path is untested, and it can race a concurrent booking (section 13).
 
 ## 9. API surface
 
@@ -252,6 +253,7 @@ Two defects in this path are recorded in section 13.
 | GET | `/api/v1/reservations/availability?startDate=&endDate=` | authenticated; city derived from the principal |
 | POST | `/api/v1/reservations` | authenticated |
 | GET | `/api/v1/reservations/my` | authenticated, paginated |
+| GET | `/api/v1/reservations/{id}` | reservation owner |
 | POST | `/api/v1/reservations/{id}/confirm` | reservation owner |
 | POST | `/api/v1/reservations/{id}/cancel` | reservation owner |
 | GET | `/api/v1/admin/users` | ADMIN, paginated |
@@ -272,6 +274,8 @@ Contract decisions:
 - list endpoints are wrapped in `PaginatedResponse<T>` with a `data` array and a `meta` object (`currentPage`, `pageSize`, `totalElements`, `totalPages`, `isFirst`, `isLast`, `hasNext`, `hasPrevious`). Clients must read `meta`, not just `data`.
 - errors are `application/problem+json` with `status`, `title`, `detail`, `instance`; validation failures add an `invalidFields` map, and a bike-status conflict adds a `conflicts` array
 - PATCH bodies use `JsonNullable<T>` for tri-state semantics: field absent means "leave unchanged", explicit `null` is a validation error
+- paginated endpoints accept only an allow-listed `?sort=` (`common/web/SortableFields`); anything else is **400 Invalid Sort Parameter**. Defaults: `/reservations/my` by `startDate` desc, `/admin/users` by `createdAt` desc, the bike list by `id`
+- `@Future`/`@Past` read the application `Clock` (a `ValidationConfigurationCustomizer` in `ClockConfig`), so validation and the domain agree on "today"
 - duplicate email and phone are pre-checked in the service layer and return **409**; if a race slips past the pre-check the constraint mapping produces the same status
 - `/reservations/availability` returns `{ quote, models }`, not a bare array:
 
@@ -287,7 +291,7 @@ Contract decisions:
 
 Numeric specs are JSON numbers. `modelCategory` is a `BikeCategory` name.
 
-Duration is validated on both write paths: `ReservationBookRequest` enforces 3-21 days and strict date order with `@AssertTrue`, and `ReservationController.getAvailableModels` rejects an out-of-range span before quoting, so a client cannot be shown a price for a range it could never book.
+Duration is validated on both paths through `RentalPeriod`: `ReservationBookRequest` reports it per field (400 with `invalidFields`), and `getAvailableModels` builds a `RentalPeriod` before quoting (422), so a client cannot be shown a price for a range it could never book.
 
 ## 10. Database
 
@@ -305,12 +309,15 @@ Liquibase changelogs under `db/changelog`, master at `db.changelog-master.yaml`:
 | 009-add-bike-instance-version.xml | `version` column on bike_instances |
 | 010-align-reservation-created-at-tz.xml | `reservations.created_at` to timestamptz, matching users |
 | 011-add-indexes.xml | `reservations(user_id)`, `reservations(status, created_at)`, `bike_instances(city, status)` |
-| 012-add-cancellation-reason-for-reservations.xml | nullable `cancellation_reason` on reservations (uncommitted) |
+| 012-add-cancellation-reason-for-reservations.xml | nullable `cancellation_reason` on reservations |
 | dev/999-dev-seed.xml | dev-only seed data (context `dev`) |
+| prod/001-prod-seed.xml | public demo data (context `prod`) — bike models once; accounts, fleet and reservations `runAlways` |
 
 There is no `006`; the original seed changelog was renumbered to `dev/999` so seeds always run last.
 
-The dev seed is context-gated, and `application-prod.yml` sets `spring.liquibase.contexts: prod`, so it never runs in production. `src/main/resources/liquibase.yml` configures the **Maven plugin only** (local `diff` / `generateChangeLog` work) and is not read by the running application.
+Both seeds are context-gated: `application-dev.yml` runs `dev`, `application-prod.yml` runs `prod`, the test profile runs `test` (neither seed). The prod seed upserts the demo accounts and fleet and **deletes and rebuilds every reservation on each boot**, re-anchored to `CURRENT_DATE`, so the demo never goes stale. It must never be pointed at a database holding real bookings. DEMO.md documents the accounts and the walkthrough.
+
+`src/main/resources/liquibase.yml` configures the **Maven plugin only** (local `diff` / `generateChangeLog` work against the local dev database) and is not read by the running application.
 
 The exclusion constraint:
 
@@ -326,86 +333,74 @@ ALTER TABLE reservations
 ## 11. ADR reference set
 
 - `docs/adrs/0001-prevent-reservation-race-conditions.md` — PostgreSQL exclusion constraint for overlap prevention. The constraint is the hard guarantee; the service pre-check is UX; `@Version` is for update races only, never for the insert race.
-- `docs/adrs/0002-adopt-rich-domain-model-architecture.md` — Rich Domain Model. No public setters on entities, factory methods, invariants in the entity, services orchestrate only.
+- `docs/adrs/0002-adopt-rich-domain-model-architecture.md` — Rich Domain Model. No public setters on entities, factory methods, invariants in the entity, services orchestrate only. Bookability lives in `BikeInstance.assertBookableIn`, the date rules in `RentalPeriod`.
 - `docs/adrs/0003-adopt-project-context-file-with-ai-assistant-grounding.md` — this file, and the AI grounding workflow.
 
 Explicitly rejected anti-patterns: anemic entities with public setters; pessimistic locking for booking; `SERIALIZABLE` + retry; `@Version` as a double-booking defence; `double` for money; returning entities from controllers.
 
 ## 12. Testing strategy
 
-61 tests, green on a clean build.
+96 tests, green on a clean build, in about a minute.
 
-- domain unit tests: `ReservationTest` (parameterised transition matrix), `UserTest`
+- domain unit tests: `ReservationTest` (transition matrix, confirm/expire windows), `RentalPeriodTest`, `BikeInstanceTest`, `UserTest`
 - pricing unit tests: `RentalCostCalculatorTest` with tier boundaries at 7, 8, 14, 15 and 21 days
 - service unit tests with Mockito: `ReservationServiceTest`, `UserServiceTest`, `AuthServiceTest`
 - security unit tests: `JwtServiceTest` (forgery, expiry, unique jti), `JwtAuthenticationFilterTest`
-- integration tests on Testcontainers (Postgres 16 + Redis 8) via `BaseIntegrationTest`: `ReservationIntegrationTest`, `ReservationConcurrencyIntegrationTest`, `ReservationSchedulerIntegrationTest`, `AuthenticationIntegrationTest`, `UserControllerTest`, `ReservationRepositoryTest`
+- full-application tests extending `AbstractApiIntegrationTest`: `ReservationIntegrationTest`, `ReservationConcurrencyIntegrationTest`, `ReservationSchedulerIntegrationTest` (including the midnight expiry case), `SecurityAccessIntegrationTest` (401/403 matrix, sort allow-list), `UserControllerTest`, `VelocityApiApplicationTests`
+- repository slice test: `ReservationRepositoryTest` (`@DataJpaTest`)
 
 The concurrency test is the centrepiece: two threads released by a `CountDownLatch` POST the same booking and the suite asserts exactly one 201 and one 409.
 
 That test has **two** valid outcomes, and both must map to 409. Roughly two runs in three the exclusion constraint fires; the remaining third Postgres reports `deadlock detected`, because two concurrent inserts contending on a GiST exclusion constraint for the same key genuinely deadlock. Because of this the test asserts status codes only — asserting an exact body would make it flaky, since the two paths produce different messages. A separate sequential test is the right place to pin the constraint message.
 
-Test seams: `SecurityTestHelper.asUser(...)`, `@WithMockCustomUser`, `TestDataFactory`, and the `Clock` bean, which is replaced with a stubbed instant in the repository, scheduler and reservation integration tests.
+Test seams: `SecurityTestHelper.asUser(id, role)`, `TestDataFactory`, and `MutableClock` (`support/`), a `@Primary` test clock that follows real time until a test fixes it with `clock.setInstant(...)`.
 
 No H2 anywhere. Postgres-specific features are tested on Postgres.
 
-Build note: `UserServiceTest` lives in a package spelled `user.Service`. A case-only rename of that package leaves a stale `.class` under the other spelling on a case-insensitive filesystem, and incremental builds then fail with `wrong name: com/velocity/api/user/Service/UserServiceTest`. `mvnw clean test` clears it.
+Containers and contexts: `BaseIntegrationTest` starts Postgres and Redis once per test run (static initializer + `@ServiceConnection`; deliberately not `@Testcontainers`/`@Container`, which restart them per class and break Spring's context cache). Every full-application test extends `AbstractApiIntegrationTest`, which fixes one configuration (`RANDOM_PORT`, MockMvc, TestRestTemplate, test clock, data factory), so the suite builds **two** Spring contexts: that one and the `@DataJpaTest` slice. Do not add `@MockitoBean`, `@Import` or properties to a subclass; each creates another context. The shared database is truncated after every test.
 
 ## 13. Known gaps and watchpoints
 
-Accurate as of this update. Do not describe these as working.
+Accurate as of the 2026-09-24 review, updated 2026-09-28. Items marked *reproduced* were confirmed against a running instance or the test suite. Do not describe these as working.
 
-**Blocks a usable deployment**
-- No Dockerfile, no deployed instance, no Actuator or health endpoint, no structured logging.
-- **Production will come up with an empty database.** The seed is `context="dev"` and prod runs `contexts: prod`, so a fresh prod database gets the schema and zero rows: no bikes, no models, no account to log in with. A `prod`-context changelog with fleet data and at least one account is required before the deployed app is usable by anyone.
-- `SPRING_PROFILES_ACTIVE` must be pinned in the image; unset, the app falls back to `dev`.
+**Defects — reproduced**
+- The JWT subject is the email, which admins can change. After an admin renames a user, a new registration with the old email makes the old token resolve to the new account. The subject should be the user's UUID.
+- An invalid or expired Bearer header on a public endpoint (e.g. `/auth/login`) returns 401 instead of being ignored. The frontend avoids it by sending `token: null` on login and register.
 
-**Defects in the uncommitted bike-status work (section 8a)**
-- `AdminUserService.updateBikeStatus` throws `org.springframework.dao.OptimisticLockingFailureException`, but `GlobalExceptionHandler` registers its handler for the subclass `ObjectOptimisticLockingFailureException`. Handler matching is by assignability, and a parent is not assignable to its child, so the throw no longer matches and falls through to the generic handler as a **500**. It was a 409 before the change.
-- `findActiveConflictsForBike` filters on `endDate > currentDate`, which includes rentals already under way. Force-cancelling one of those calls `transitionTo(CANCELLED, ...)`, which refuses any cancellation on or after `startDate` with `LateCancelException` (422). So `force=true` fails for exactly the case it exists for — a bike that is out with a customer right now and needs to come off the road.
-- The whole path is untested.
+**Defects — by analysis**
+- A bike-status change can race a booking: the admin path finds no conflicts while a concurrent booking inserts a reservation on the still-ACTIVE bike, and both commit. The exclusion constraint cannot cover this invariant because it spans two tables. Fix direction: `PESSIMISTIC_READ` on the bike in `book`, `PESSIMISTIC_WRITE` in `updateBikeStatus`, then an ADR-004.
 
-**Error contract**
-- `CannotAcquireLockException` has no handler, so a deadlock surfaces as a 500.
-- An unrecognised `DataIntegrityViolationException` is reported as a 409 conflict even when it is a NOT NULL or FK violation, which is a server bug.
-- The `no_overlapping_active_reservations` branch of the constraint-name mapping never matches, because Hibernate does not populate a constraint name for exclusion violations (SQLState 23P01). The overlap 409 is produced by the blanket default instead.
+**Public demo**
+- The demo admin credentials are published (prod seed + DEMO.md). Anyone can list the email and phone of every visitor who registered, edit or block them, and use `ops@` to demote or block `admin@` until the next restart. Options: mask contact data of non-seed accounts in the prod profile, purge visitor accounts nightly, refuse admin changes to seed accounts.
+- Swagger UI and the OpenAPI document are public in production (deliberate for a portfolio).
 
-**Resilience**
-- `TokenBlacklistRepository.isBlacklisted(...)` runs on every authenticated request with no timeout and no failure handling, so a Redis outage fails every authenticated request with a 500.
-- The JWT TTL is 24 hours, long for a token whose revocation depends on Redis being reachable.
-
-**Configuration**
-- `ddl-auto: validate` is at a key nothing reads, so there is no schema validation at startup.
-- `ClockConfig` returns `Clock.systemDefaultZone()`; every `LocalDate.now(clock)` therefore depends on the host timezone, and a UTC container disagrees with a UTC+2 laptop about the day boundary for the late-cancel rule and the completion scheduler.
-- `liquibase.yml` carries a plaintext password.
-
-**Domain**
-- The E.164 phone pattern is duplicated in four backend locations (`User.PHONE_PATTERN`, `UserRegistrationRequest`, `UserProfileUpdateRequest`, `AdminUserUpdateRequest`) plus the frontend. They agree today; nothing prevents drift.
-- `pricing/exception/InvalidRentalDurationException` is unreferenced.
+**Design and code quality**
+- `GlobalExceptionHandler` has ~20 near-identical handlers; a base exception carrying status, title and a stable error code would collapse them.
+- The E.164 phone pattern is duplicated in four backend locations (`User.PHONE_PATTERN`, `UserRegistrationRequest`, `UserProfileUpdateRequest`, `AdminUserUpdateRequest`) plus the frontend.
 
 **Security**
 - No rate limiting on `/api/v1/auth/register` or `/api/v1/auth/login`.
-- Password policy is length-only; no composition rule, no password-change endpoint.
-- Swagger UI is `permitAll` and would be publicly reachable in production.
+- No password-change endpoint; 24-hour tokens with no refresh token.
+- Redis blacklist reads fail open (deliberate; see section 7).
+
+**Observability**
+- No structured logging and no request/correlation ID. `AuthService.register` logs the user's email.
 
 **Testing**
-- `AdminUserService` has no tests at all — self-block, self-demotion, the bike-status version check and the new conflict guard are all unproven.
-- Also untested: `AnalyticsService`, `cancelReservation`, and the `findAvailableModels` native query.
-- `UserControllerTest` boots a full `@SpringBootTest` plus two containers to exercise one `@PreAuthorize`; it should be a `@WebMvcTest`.
-- Seven distinct Spring test context configurations across the suite defeat context caching.
-- `UserServiceTest` sits in a package spelled `user.Service`, carries commented-out mocks, and declares a stray `@InjectMocks AuthService`.
-- `ReservationConcurrencyIntegrationTest` seeds a user with raw SQL and `phone='123'`, a value the entity's own pattern rejects, alongside a stale comment.
+- `AdminUserService` / `AdminUserController` have no tests: block/unblock, self-demotion, role change, update conflicts, and the whole bike-status path (version mismatch, 409 conflicts, `force`).
+- Also untested: `BikeInstance.transitionTo`, `AnalyticsService`, `cancelReservation`, the `findAvailableModels` native query, logout followed by a rejected token, and the `invalidFields` response shape.
 - Dev-seed and test dates are hardcoded in 2026 and have begun to fall into the past.
 
 **CI**
-- Runs `mvn clean test` only; no coverage, linting, or frontend workflow.
+- `ci.yml` runs `mvn clean test` rather than `./mvnw -B verify`; no coverage report, no test-report upload on failure, no Dependabot.
 
 ## 14. Frontend contract notes
 
 The React client lives in a sibling repository and is a presentation layer only.
 
 - the client role literal is `CLIENT`
-- `AdminUserResponse` exposes `createdAt`, not `joinedDate`, and does not include `city`
+- `AdminUserResponse` exposes `createdAt` (not `joinedDate`) and includes `city`, `status` and `role`
+- `BikeInstanceResponse` (admin bike list) includes `version`, which the client must send back on a status change
 - money comes from the server quote; the client must not recompute totals
 - `endDate` is exclusive in every date calculation
 - list responses are enveloped; read `meta` for pagination
@@ -427,6 +422,10 @@ The React client lives in a sibling repository and is a presentation layer only.
 
 | PR | Change |
 |---|---|
+| — (`58865fc`) | CD pipeline: `deploy.yml` builds an arm64 image to GHCR and deploys to the OCI VM over SSH; `docker-compose.prod.yaml`; Caddy reverse proxy with HTTPS; local `docker-compose.yaml` reduced to Postgres + Redis |
+| #118 | `InvalidTokenException` separates expired/revoked tokens from wrong passwords; Dockerfile (multi-stage, non-root, `prod` pinned); Actuator health; prod demo seed; DEMO.md |
+| #116 | pre-deploy hardening: `ddl-auto: validate` at the right key, Europe/Warsaw `Clock`, Redis timeouts and fail-open reads, unmapped integrity violations → 500, 23P01 mapping, `CannotAcquireLockException` handler, password composition rule; README and this file realigned |
+| #115 | admin bike-status conflict guard with `?force`, `cancelByOperator`, `cancellation_reason` column |
 | #113 | single-parse JWT with a `jti`-keyed blacklist; `IllegalArgumentException` replaced by `DomainValidationException` across the domain; `PricingProperties`; `Reservation` null-check ordering fix; `@RequestParam` on the fleet status filter; descriptive Liquibase changeset ids; `runOnChange` removed from the dev seed |
 | #111 | indexes on `reservations(user_id)`, `reservations(status, created_at)`, `bike_instances(city, status)` |
 | #101 | `RentalQuote` and `AvailabilityResponse`; availability now returns a server-priced quote alongside models |
@@ -442,4 +441,4 @@ The React client lives in a sibling repository and is a presentation layer only.
 
 VeloCity is a backend built around one integrity problem: a bike must never be double-booked for overlapping dates, even under concurrency. The exclusion constraint, the rich domain model, the JWT layer and the lifecycle automation all serve that guarantee.
 
-The architecture is settled and the error contract is largely complete. The open work is, in order: land the pre-deploy hardening branch, finish and test the bike-status conflict guard, seed a production database, and containerise and deploy. Rate limiting and the admin-surface test gap follow.
+The architecture is settled, the error contract is largely complete, and the app is deployed with a self-resetting demo. The open work is, in order: the rest of the auth fixes (the email-based JWT subject, tokens on public endpoints), the bike-status/booking race together with the admin-surface tests, CI, and the demo's exposure of visitor data.

@@ -1,4 +1,4 @@
-package com.velocity.api.user.dto;
+package com.velocity.api.bike.dto;
 
 import com.velocity.api.bike.BikeStatus;
 import jakarta.validation.constraints.NotNull;
