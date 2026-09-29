@@ -2,6 +2,8 @@ package com.velocity.api.reservation;
 
 import com.velocity.api.AbstractApiIntegrationTest;
 import com.velocity.api.bike.BikeInstance;
+import com.velocity.api.bike.repository.BikeInstanceRepository;
+import com.velocity.api.bike.repository.BikeModelRepository;
 import com.velocity.api.common.City;
 import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.factory.TestDataFactory;
@@ -119,6 +121,48 @@ public class ReservationIntegrationTest extends AbstractApiIntegrationTest {
 
         // 31 minutes later, before the scheduler has swept it
         clock.setInstant("2026-09-01T10:31:00Z");
+        mockMvc.perform(post("/api/v1/reservations/%s/confirm".formatted(reservation.getId()))
+                        .with(asUser(user.getId().toString(), "CLIENT")))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.title").value("Reservation Expired"));
+
+        assertThat(reservationRepository.findById(reservation.getId()).orElseThrow().getStatus())
+                .isEqualTo(ReservationStatus.PENDING);
+    }
+
+    @Test
+    public void book_bikeInAnotherCity_isRefused() throws Exception {
+        // Real time: the request's @Future check reads the system clock
+        when(clock.instant()).thenReturn(Instant.now());
+        when(clock.getZone()).thenReturn(ZoneId.of("Europe/Warsaw"));
+        User warsawUser = testDataFactory.createAndSaveDefaultUser();
+        BikeInstance gdanskBike = testDataFactory.createAndSaveBike(City.GDANSK);
+        LocalDate start = LocalDate.now(clock).plusDays(5);
+
+        mockMvc.perform(post("/api/v1/reservations")
+                        .with(asUser(warsawUser.getId().toString(), "CLIENT"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"bikeInstanceId": "%s", "startDate": "%s", "endDate": "%s"}
+                                """.formatted(gdanskBike.getId(), start, start.plusDays(5))))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.title").value("Bike In Another City"));
+
+        assertThat(reservationRepository.count()).isZero();
+    }
+
+    @Test
+    public void confirmReservation_afterConfirmationWindow_isRefused() throws Exception {
+        when(clock.instant()).thenReturn(Instant.parse("2026-09-01T10:00:00Z"));
+        when(clock.getZone()).thenReturn(ZoneId.of("UTC"));
+        User user = testDataFactory.createAndSaveDefaultUser();
+        BikeInstance bike = testDataFactory.createAndSaveDefaultBike();
+        Reservation reservation = testDataFactory.createAndSaveReservation(
+                user, bike, LocalDate.parse("2026-09-05"), LocalDate.parse("2026-09-10"), LocalDate.now(clock)
+        );
+
+        // 31 minutes later, before the scheduler has swept it
+        when(clock.instant()).thenReturn(Instant.parse("2026-09-01T10:31:00Z"));
         mockMvc.perform(post("/api/v1/reservations/%s/confirm".formatted(reservation.getId()))
                         .with(asUser(user.getId().toString(), "CLIENT")))
                 .andExpect(status().is(422))
