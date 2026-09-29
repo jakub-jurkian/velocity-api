@@ -1,6 +1,7 @@
 package com.velocity.api.reservation.controller;
 
 import com.velocity.api.common.dto.PaginatedResponse;
+import com.velocity.api.common.web.SortableFields;
 import com.velocity.api.reservation.RentalPeriod;
 import com.velocity.api.reservation.dto.*;
 import com.velocity.api.reservation.service.ReservationService;
