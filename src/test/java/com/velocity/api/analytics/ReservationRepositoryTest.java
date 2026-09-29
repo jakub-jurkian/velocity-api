@@ -8,32 +8,30 @@ import com.velocity.api.common.City;
 import com.velocity.api.config.ClockConfig;
 import com.velocity.api.reservation.RentalPeriod;
 import com.velocity.api.reservation.Reservation;
+import com.velocity.api.support.MutableClock;
+import com.velocity.api.support.TestClockConfig;
 import com.velocity.api.reservation.ReservationStatus;
 import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.reservation.repository.projection.FleetPopularityProjection;
 import com.velocity.api.reservation.repository.projection.RevenueByMonthProjection;
 import com.velocity.api.user.User;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@Import(ClockConfig.class)
+@Import({ClockConfig.class, TestClockConfig.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class ReservationRepositoryTest extends BaseIntegrationTest {
     @Autowired
@@ -42,13 +40,17 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
     @Autowired
     private TestEntityManager entityManager;
 
-    @MockitoBean
-    private Clock clock;
+    @Autowired
+    private MutableClock clock;
+
+    @AfterEach
+    public void resetClock() {
+        clock.reset();
+    }
 
     @BeforeEach
     public void setUp() {
-        Mockito.when(clock.instant()).thenReturn(Instant.parse("2026-09-01T10:00:00Z"));
-        Mockito.when(clock.getZone()).thenReturn(ZoneId.of("UTC"));
+        clock.setInstant("2026-09-01T10:00:00Z");
         // Prerequisites
         User user = User.registerClient("testuser@velocity.com", "hashed_pw", "Test", "+48000500000", City.WARSAW);
         entityManager.persist(user);
@@ -141,7 +143,7 @@ public class ReservationRepositoryTest extends BaseIntegrationTest {
 
     @Test
     public void countActiveRentals_WithConfirmedReservations_ReturnsCorrectCount() {
-        Mockito.when(clock.instant()).thenReturn(Instant.parse("2026-09-07T10:00:00Z"));
+        clock.setInstant("2026-09-07T10:00:00Z");
         long result = reservationRepository.countActiveRentals(LocalDate.now(clock));
         assertThat(result).isEqualTo(1L);
     }

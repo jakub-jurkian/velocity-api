@@ -1,6 +1,5 @@
 package com.velocity.api.user.service;
 
-import com.velocity.api.auth.service.AuthService;
 import com.velocity.api.common.City;
 import com.velocity.api.common.exception.DomainValidationException;
 import com.velocity.api.common.exception.ResourceNotFoundException;
@@ -14,8 +13,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.openapitools.jackson.nullable.JsonNullable;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -23,7 +20,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,32 +30,6 @@ public class UserServiceTest {
 
     @InjectMocks
     private UserService userService;
-    @InjectMocks
-    private AuthService authService;
-
-    @DisplayName("Given a valid session but missing user, getProfile should throw exception")
-    @Test
-    public void getProfile_userDeleted_throwsException() {
-        // Arrange: Create mocs for the security context
-        SecurityContext securityContext = mock(SecurityContext.class);
-
-        // Configure the mock to return a specific email
-        String testEmail = "test@test.com";
-
-        // Inject the mocked context into the static Spring Security holder
-        SecurityContextHolder.setContext(securityContext);
-
-        // Configure the repository to return an empty box
-        when(userRepository.findByEmail(testEmail)).thenReturn(Optional.empty());
-
-        // Act & Assert: Prove that the exception is thrown and halts execution
-        assertThatThrownBy(() -> authService.getProfile(testEmail))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining(testEmail);
-
-        // Cleanup: Clear the context so it does not pollute other tests
-        SecurityContextHolder.clearContext();
-    }
 
     @Test
     public void updateProfile_fieldOmitted_retainsExistingValue() {

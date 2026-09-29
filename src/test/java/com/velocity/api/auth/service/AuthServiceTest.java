@@ -1,6 +1,7 @@
 package com.velocity.api.auth.service;
 
 import com.velocity.api.common.City;
+import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.security.CustomUserDetails;
 import com.velocity.api.security.JwtService;
 import com.velocity.api.security.repository.TokenBlacklistRepository;
@@ -29,8 +30,10 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -84,6 +87,15 @@ public class AuthServiceTest {
         // Assert
         assertThat(userLoginResponse).hasFieldOrPropertyWithValue("accessToken", "fake-jwt-string");
         assertThat(userLoginResponse).hasFieldOrPropertyWithValue("expiresIn", 86400000L);
+    }
+
+    @Test
+    public void getProfile_userNoLongerExists_throwsResourceNotFoundException() {
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.getProfile("test@test.com"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("test@test.com");
     }
 
     @Test

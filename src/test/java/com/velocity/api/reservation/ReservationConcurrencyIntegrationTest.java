@@ -1,6 +1,6 @@
 package com.velocity.api.reservation;
 
-import com.velocity.api.BaseIntegrationTest;
+import com.velocity.api.AbstractApiIntegrationTest;
 import com.velocity.api.bike.BikeCategory;
 import com.velocity.api.bike.BikeInstance;
 import com.velocity.api.bike.BikeModel;
@@ -11,18 +11,12 @@ import com.velocity.api.reservation.repository.ReservationRepository;
 import com.velocity.api.common.City;
 import com.velocity.api.security.CustomUserDetailsService;
 import com.velocity.api.security.JwtService;
-import com.velocity.api.user.repository.UserRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
-import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.*;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -31,17 +25,13 @@ import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// default - webEnvironment = WebEnvironment.MOCK - does not start real web server (creates mock servlet env in memory)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
-@AutoConfigureTestRestTemplate
-public class ReservationConcurrencyIntegrationTest extends BaseIntegrationTest {
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+/**
+ * Proves ADR-001 end to end: two identical bookings released at the same instant through a
+ * real HTTP server, exactly one of which may succeed.
+ */
+public class ReservationConcurrencyIntegrationTest extends AbstractApiIntegrationTest {
     @Autowired
     private TestRestTemplate testRestTemplate;
-    @Autowired
-    private UserRepository userRepository;
     @Autowired
     private BikeModelRepository bikeModelRepository;
     @Autowired
@@ -62,8 +52,6 @@ public class ReservationConcurrencyIntegrationTest extends BaseIntegrationTest {
                 "INSERT INTO users (id, email, password_hash, full_name, phone, status, role, city, created_at) " +
                         "VALUES ('00000000-0000-0000-0000-000000000001', 'test@test.com', 'hash', 'Test', '+48567432111', 'ACTIVE', 'CLIENT', 'WARSAW', now())"
         );
-        // force the hardcoded user into DB cause id is hardcoded in controller right now
-        // User savedUser = userRepository.save(new User("test@test.com", "xf843fd23iom4r", "Test", "+48000000000", UserRole.CLIENT, City.GDANSK));
         BikeModel savedBikeModel = bikeModelRepository.save(BikeModel.create("Test", "Test", 45, 100, 50, BikeCategory.AGILITY));
         BikeInstance savedBikeInstance = bikeInstanceRepository.save(BikeInstance.initialize(savedBikeModel, City.WARSAW));
         bikeInstanceId = savedBikeInstance.getId();
@@ -72,18 +60,11 @@ public class ReservationConcurrencyIntegrationTest extends BaseIntegrationTest {
         validToken = jwtService.generateToken(userDetails);
     }
 
-    @AfterEach
-    public void cleanUp() {
-        reservationRepository.deleteAll();
-        bikeInstanceRepository.deleteAll();
-        bikeModelRepository.deleteAll();
-        userRepository.deleteAll();
-    }
-
     @Test
     public void createReservation_ConcurrentIdenticalRequests_ReturnsCreatedAndConflict() throws ExecutionException, InterruptedException {
         // prep the req
-        ReservationBookRequest req = new ReservationBookRequest(bikeInstanceId, LocalDate.now().plusDays(2), LocalDate.now().plusDays(6));
+        LocalDate today = LocalDate.now(clock);
+        ReservationBookRequest req = new ReservationBookRequest(bikeInstanceId, today.plusDays(2), today.plusDays(6));
 
         // init concurrency tools
         CountDownLatch latch = new CountDownLatch(1);
@@ -119,6 +100,7 @@ public class ReservationConcurrencyIntegrationTest extends BaseIntegrationTest {
             // assert that one is 201 and second one is 409
             List<HttpStatus> statuses = List.of(status1, status2);
             assertThat(statuses).containsExactlyInAnyOrder(HttpStatus.CREATED, HttpStatus.CONFLICT);
+            assertThat(reservationRepository.count()).isEqualTo(1);
         } finally {
             executor.shutdown();
         }
