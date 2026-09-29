@@ -444,6 +444,43 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(InvalidSortException.class)
+    public ProblemDetail handleInvalidSortException(InvalidSortException ex) {
+        log.warn("Rejected sort parameter: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage()
+        );
+        problem.setTitle("Invalid Sort Parameter");
+        return problem;
+    }
+
+    /**
+     * Backstop for a sort property that no endpoint allow-list caught. Spring Data only
+     * resolves it while building the query, so without this it surfaces as a 500.
+     */
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ProblemDetail handlePropertyReferenceException(PropertyReferenceException ex) {
+        log.warn("Unknown property in request: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                "Cannot sort by '" + ex.getPropertyName() + "'."
+        );
+        problem.setTitle("Invalid Sort Parameter");
+        return problem;
+    }
+
+    @ExceptionHandler(TokenRevocationUnavailableException.class)
+    public ProblemDetail handleTokenRevocationUnavailableException(TokenRevocationUnavailableException ex) {
+        log.error("Logout could not be recorded: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "Logout is temporarily unavailable. Please try again in a moment."
+        );
+        problem.setTitle("Service Unavailable");
+        return problem;
+    }
+
     /**
      * Fallback handler for any unhandled exceptions.
      * Maps to HTTP 500 Internal Server Error.

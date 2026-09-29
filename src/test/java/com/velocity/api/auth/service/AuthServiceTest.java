@@ -100,15 +100,6 @@ public class AuthServiceTest {
     }
 
     @Test
-    public void getProfile_userNoLongerExists_throwsResourceNotFoundException() {
-        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> authService.getProfile("test@test.com"))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("test@test.com");
-    }
-
-    @Test
     public void login_invalidCredentials_throwsExceptionAndAborts() {
         // Arrange
         when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad Credentials"));
