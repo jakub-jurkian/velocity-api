@@ -86,7 +86,8 @@ public class AuthServiceTest {
         UserLoginResponse userLoginResponse = authService.login(request);
         // Assert
         assertThat(userLoginResponse).hasFieldOrPropertyWithValue("accessToken", "fake-jwt-string");
-        assertThat(userLoginResponse).hasFieldOrPropertyWithValue("expiresIn", 86400000L);
+        // 24 hours, reported in seconds
+        assertThat(userLoginResponse).hasFieldOrPropertyWithValue("expiresIn", 86400L);
     }
 
     @Test

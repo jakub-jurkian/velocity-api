@@ -17,8 +17,10 @@ import java.util.UUID;
 
 import static com.velocity.api.security.SecurityTestHelper.asUser;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -66,7 +68,34 @@ public class ReservationIntegrationTest extends AbstractApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.meta.totalElements").value(2))
                 .andExpect(jsonPath("$.meta.totalPages").value(1))
-                .andExpect(jsonPath("$.data.length()").value(2));
+                .andExpect(jsonPath("$.data.length()").value(2))
+                // Default order: newest start date first
+                .andExpect(jsonPath("$.data[0].startDate").value("2026-09-10"));
+    }
+
+    @Test
+    public void getMyReservations_unknownSortField_returnsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/reservations/my?sort=doesNotExist")
+                        .with(asUser(UUID.randomUUID().toString(), "CLIENT")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Invalid Sort Parameter"));
+    }
+
+    @Test
+    public void book_bikeInUsersCity_returnsCreatedWithLocation() throws Exception {
+        clock.setInstant("2026-09-01T10:00:00Z");
+        User user = testDataFactory.createAndSaveDefaultUser();
+        BikeInstance bike = testDataFactory.createAndSaveBike(City.WARSAW);
+
+        mockMvc.perform(post("/api/v1/reservations")
+                        .with(asUser(user.getId().toString(), "CLIENT"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"bikeInstanceId": "%s", "startDate": "2026-09-05", "endDate": "2026-09-10"}
+                                """.formatted(bike.getId())))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", endsWith("/api/v1/reservations/" + reservationRepository.findAll().getFirst().getId())))
+                .andExpect(jsonPath("$.status").value("PENDING"));
     }
 
     @Test
@@ -85,6 +114,26 @@ public class ReservationIntegrationTest extends AbstractApiIntegrationTest {
                 .andExpect(jsonPath("$.title").value("Bike In Another City"));
 
         assertThat(reservationRepository.count()).isZero();
+    }
+
+    @Test
+    public void getReservation_otherUsersReservation_returnsNotFound() throws Exception {
+        clock.setInstant("2026-09-01T10:00:00Z");
+        User owner = testDataFactory.createAndSaveDefaultUser();
+        User otherUser = testDataFactory.createAndSaveUser("other@test.com", "123456789");
+        BikeInstance bike = testDataFactory.createAndSaveDefaultBike();
+        Reservation reservation = testDataFactory.createAndSaveReservation(
+                owner, bike, LocalDate.parse("2026-09-05"), LocalDate.parse("2026-09-10"), LocalDate.now(clock)
+        );
+
+        mockMvc.perform(get("/api/v1/reservations/" + reservation.getId())
+                        .with(asUser(owner.getId().toString(), "CLIENT")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(reservation.getId().toString()));
+
+        mockMvc.perform(get("/api/v1/reservations/" + reservation.getId())
+                        .with(asUser(otherUser.getId().toString(), "CLIENT")))
+                .andExpect(status().isNotFound());
     }
 
     @Test

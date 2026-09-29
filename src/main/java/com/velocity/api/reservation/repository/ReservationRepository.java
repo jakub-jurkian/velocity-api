@@ -39,7 +39,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     @Query("SELECT r.id FROM Reservation r WHERE r.status = :status AND r.endDate < :today")
     List<UUID> findPastDueConfirmedReservationsIds(@Param("status") ReservationStatus status, @Param("today") LocalDate today);
 
-    @EntityGraph(attributePaths = {"bikeInstance", "bikeInstance.bikeModel", "bikeInstance.id", "bikeInstance.city"})
+    @EntityGraph(attributePaths = {"bikeInstance", "bikeInstance.bikeModel"})
     Page<Reservation> findByUserId(UUID userId, Pageable pageable);
 
     @Query("SELECT COALESCE(SUM(r.totalCost), 0) FROM Reservation r WHERE r.status IN ('CONFIRMED', 'COMPLETED')")

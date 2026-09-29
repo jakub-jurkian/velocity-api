@@ -1,5 +1,6 @@
 package com.velocity.api.security.repository;
 
+import com.velocity.api.security.exception.TokenRevocationUnavailableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -21,8 +22,7 @@ public class TokenBlacklistRepository {
             stringRedisTemplate.opsForValue().set(KEY_PREFIX + tokenId, "blacklisted", ttl);
         } catch (DataAccessException e) {
             // Fail loud: a logout we cannot record must not report success.
-            log.error("Redis unavailable; token {} was NOT revoked", tokenId, e);
-            throw e;
+            throw new TokenRevocationUnavailableException("Redis unavailable; token " + tokenId + " was NOT revoked", e);
         }
     }
 

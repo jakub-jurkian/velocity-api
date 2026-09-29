@@ -11,7 +11,5 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         havingValue = "true",
         matchIfMissing = true)
 public class SchedulingConfig {
-    // The class exists purely as a "switchboard" to hold the annotations.
-    // You are telling Spring, "If this condition is met, load this file
-    // and turn on the @EnableScheduling engine." It doesn't need any methods or beans inside it.
+    // Off in the test profile (scheduling.enabled=false) so the jobs cannot race integration tests.
 }

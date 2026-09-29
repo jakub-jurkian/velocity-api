@@ -61,17 +61,14 @@ public class AuthService {
     }
 
     public UserLoginResponse login(UserLoginRequest request) {
-        // password check
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.password()));
 
-        // Cast the principal (the logged-in entity) to Spring UserDetails object
         if (!(authentication.getPrincipal() instanceof CustomUserDetails principal)) {
             throw new IllegalStateException("Authentication principal is not CustomUserDetails");
         }
 
-        // call token generator
         String generatedToken = jwtService.generateToken(principal);
-        return new UserLoginResponse(generatedToken, "Bearer", jwtExpiration);
+        return new UserLoginResponse(generatedToken, "Bearer", Duration.ofMillis(jwtExpiration).toSeconds());
     }
 
     public void logout(String token) {

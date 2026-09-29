@@ -47,4 +47,12 @@ public class SecurityAccessIntegrationTest extends AbstractApiIntegrationTest {
         mockMvc.perform(get(path).with(asUser(UUID.randomUUID().toString(), "ADMIN")))
                 .andExpect(status().isOk());
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"passwordHash", "doesNotExist"})
+    void adminUserList_sortByFieldOutsideAllowList_returns400(String field) throws Exception {
+        mockMvc.perform(get("/api/v1/admin/users?sort=" + field).with(asUser(UUID.randomUUID().toString(), "ADMIN")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Invalid Sort Parameter"));
+    }
 }
