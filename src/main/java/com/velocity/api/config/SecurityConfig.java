@@ -31,7 +31,7 @@ import java.util.List;
 @Configuration
 @RequiredArgsConstructor
 @EnableWebSecurity
-@EnableMethodSecurity // This enables @PreAuthorize
+@EnableMethodSecurity
 public class SecurityConfig {
     @Value("${cors.allowed-origins}")
     private List<String> allowedOrigins;
@@ -39,8 +39,6 @@ public class SecurityConfig {
     private final DelegatingAccessDeniedHandler accessDeniedHandler;
     private final DelegatingAuthenticationEntryPoint authEntryPoint;
 
-    // tells Spring to run this method once, take the resulting
-    // BCryptPasswordEncoder object, and put it into the application context.
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -63,9 +61,6 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .cors(c -> c.configurationSource(corsConfigurationSource()));
         return http.build();
-        // Under the hood, Spring creates a concrete class
-        // (DefaultSecurityFilterChain) that implements the interface
-        // and returns it.
     }
 
     @Bean

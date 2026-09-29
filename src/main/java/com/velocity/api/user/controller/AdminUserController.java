@@ -2,6 +2,7 @@ package com.velocity.api.user.controller;
 
 import com.velocity.api.bike.BikeStatus;
 import com.velocity.api.common.dto.PaginatedResponse;
+import com.velocity.api.common.web.SortableFields;
 import com.velocity.api.security.CustomUserDetails;
 import com.velocity.api.user.dto.*;
 import com.velocity.api.user.service.AdminUserService;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,15 +29,18 @@ import java.util.UUID;
 @Tag(name = "Admin User Management", description = "Administrative endpoints for managing user accounts, access status, profiles, and roles")
 @RequiredArgsConstructor
 public class AdminUserController {
+    private static final SortableFields SORTABLE = SortableFields.of("email", "fullName", "createdAt", "role", "status", "city");
+
     private final AdminUserService adminUserService;
 
     @GetMapping("/users")
     @Operation(
             summary = "List all users",
-            description = "Retrieves a paginated list of all registered users in the system."
+            description = "Retrieves a paginated list of all registered users in the system. Sortable by email, fullName, createdAt, role, status and city; newest accounts first by default."
     )
-    public ResponseEntity<PaginatedResponse<AdminUserResponse>> listUsers(@ParameterObject Pageable pageable) {
-        Page<AdminUserResponse> userPage = adminUserService.listUsers(pageable);
+    public ResponseEntity<PaginatedResponse<AdminUserResponse>> listUsers(
+            @ParameterObject @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<AdminUserResponse> userPage = adminUserService.listUsers(SORTABLE.check(pageable));
         PaginatedResponse<AdminUserResponse> response = PaginatedResponse.from(userPage);
         return ResponseEntity.ok(response);
     }

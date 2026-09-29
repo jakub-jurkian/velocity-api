@@ -99,6 +99,12 @@ public class ReservationService {
         return reservationsPage.map(reservationMapper::toDto);
     }
 
+    @Transactional(readOnly = true)
+    public ReservationResponse getUserReservation(UUID reservationId, UUID userId) {
+        Reservation reservation = reservationRepository.findByIdAndUserId(reservationId, userId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+        return reservationMapper.toDto(reservation);
+    }
+
     @Transactional
     public void confirmReservation(UUID reservationId, UUID userId) {
         Reservation reservation = reservationRepository.findByIdAndUserId(reservationId, userId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));

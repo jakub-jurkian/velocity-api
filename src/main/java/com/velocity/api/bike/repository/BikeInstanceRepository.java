@@ -34,7 +34,7 @@ public interface BikeInstanceRepository extends JpaRepository<BikeInstance, UUID
             AND NOT EXISTS (
                 SELECT 1 FROM reservations r
                 WHERE r.bike_instance_id = i.id
-                AND r.status IN ('PENDING', 'CONFIRMED')                                                                                                                                                                                                                                                                                                   \s
+                AND r.status IN ('PENDING', 'CONFIRMED')
                 AND daterange(CAST(:startDate AS date), CAST(:endDate AS date), '[)')
                 && daterange(r.start_date, r.end_date, '[)')
             )

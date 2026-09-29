@@ -9,6 +9,7 @@ import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
 import com.velocity.api.reservation.exception.LateCancelException;
 import com.velocity.api.reservation.exception.ReservationExpiredException;
 import com.velocity.api.security.exception.InvalidTokenException;
+import com.velocity.api.security.exception.TokenRevocationUnavailableException;
 import com.velocity.api.user.exception.CannotDemoteSelfException;
 import com.velocity.api.user.exception.EmailAlreadyRegisteredException;
 import com.velocity.api.user.exception.InvalidUserStateException;
@@ -20,6 +21,7 @@ import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
@@ -40,7 +42,7 @@ import java.util.Map;
 
 /**
  * Global exception handler that intercepts exceptions thrown by the application
- * and maps them to standardized RFC 7807 ProblemDetail JSON responses.
+ * and maps them to standardized RFC 9457 ProblemDetail JSON responses.
  */
 @RestControllerAdvice
 @Slf4j
@@ -393,7 +395,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             log.error("Server error encountered [{}] : {}", status.value(), ex.getMessage());
         }
 
-        // Thanks for letting me inspect and polish it, now package it into a proper ResponseEntity and send it on its way.
         return super.handleExceptionInternal(ex, body, headers, status, request);
     }
 

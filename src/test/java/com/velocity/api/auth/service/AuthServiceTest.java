@@ -86,7 +86,17 @@ public class AuthServiceTest {
         UserLoginResponse userLoginResponse = authService.login(request);
         // Assert
         assertThat(userLoginResponse).hasFieldOrPropertyWithValue("accessToken", "fake-jwt-string");
-        assertThat(userLoginResponse).hasFieldOrPropertyWithValue("expiresIn", 86400000L);
+        // 24 hours, reported in seconds
+        assertThat(userLoginResponse).hasFieldOrPropertyWithValue("expiresIn", 86400L);
+    }
+
+    @Test
+    public void getProfile_userNoLongerExists_throwsResourceNotFoundException() {
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.getProfile("test@test.com"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("test@test.com");
     }
 
     @Test

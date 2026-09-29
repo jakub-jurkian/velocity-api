@@ -1,10 +1,8 @@
 package com.velocity.api.auth.dto;
 
 import com.velocity.api.common.City;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
-@Valid
 public record UserRegistrationRequest(
         @NotBlank(message = "Email is required")
         @Email(message = "Email must be properly formatted")

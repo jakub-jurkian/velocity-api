@@ -4,7 +4,6 @@ spring:
   profiles:
     default: dev
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
     hibernate:
       ddl-auto: validate
@@ -40,6 +39,11 @@ server:
   port: 8080
 
 management:
+  health:
+    # Redis only backs token revocation, which fails open by design (see TokenBlacklistRepository).
+    # A Redis outage must not mark the whole API as down.
+    redis:
+      enabled: false
   endpoints:
     web:
       exposure:
