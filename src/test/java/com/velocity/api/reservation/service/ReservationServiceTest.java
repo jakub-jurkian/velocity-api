@@ -1,6 +1,5 @@
 package com.velocity.api.reservation.service;
 
-import com.velocity.api.reservation.exception.InvalidStatusTransitionException;
 import com.velocity.api.common.exception.ResourceNotFoundException;
 import com.velocity.api.reservation.Reservation;
 import com.velocity.api.reservation.ReservationStatus;
@@ -22,7 +21,7 @@ import java.util.UUID;
 import static com.velocity.api.reservation.ReservationTestFactory.createWithStatus;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class ReservationServiceTest {
@@ -37,23 +36,24 @@ public class ReservationServiceTest {
 
 
     @Test
-    @DisplayName("When reservation ID does not exist, transition throws ResourceNotFoundException")
-    public void transition_fakeID_throwsResourceNotFoundException() {
+    @DisplayName("When reservation ID does not exist, expiring it throws ResourceNotFoundException")
+    public void expire_fakeID_throwsResourceNotFoundException() {
         UUID fakeId = UUID.randomUUID();
         when(reservationRepository.findById(fakeId)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> reservationService.cancelStaleReservation(fakeId));
+        assertThrows(ResourceNotFoundException.class, () -> reservationService.expireStaleReservation(fakeId));
     }
 
     @Test
-    @DisplayName("When transition is illegal, throws exception and does not save to database")
-    public void transition_illegalState_neverSaves() {
+    @DisplayName("A reservation that stopped being PENDING before the sweep reached it is left alone")
+    public void expire_noLongerPending_leavesReservationUnchanged() {
         UUID validId = UUID.randomUUID();
-        Reservation completedReservation = createWithStatus(ReservationStatus.COMPLETED);
+        Reservation confirmedReservation = createWithStatus(ReservationStatus.CONFIRMED);
+        when(reservationRepository.findById(validId)).thenReturn(Optional.of(confirmedReservation));
 
-        when(reservationRepository.findById(validId)).thenReturn(Optional.of(completedReservation));
-        assertThrows(InvalidStatusTransitionException.class, () -> reservationService.cancelStaleReservation(validId));
+        reservationService.expireStaleReservation(validId);
 
-        assertThat(completedReservation.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
+        assertThat(confirmedReservation.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+        assertThat(confirmedReservation.getCancellationReason()).isNull();
     }
 }

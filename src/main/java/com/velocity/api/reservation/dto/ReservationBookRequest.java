@@ -1,12 +1,11 @@
 package com.velocity.api.reservation.dto;
 
+import com.velocity.api.reservation.RentalPeriod;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 public record ReservationBookRequest(
@@ -16,19 +15,23 @@ public record ReservationBookRequest(
         @Future(message = "Start date cannot be in the past or present")
         LocalDate startDate,
         @NotNull(message = "End date is required")
-        @Future(message = "End date must be in the future")
         LocalDate endDate) {
+
+    // The rules live in RentalPeriod; these only report them per field (400) before the
+    // service builds one.
     @AssertTrue(message = "End date must be strictly after start date")
-    // if false, validator immediately halts execution and throws a MethodArgumentNotValidException.
     public boolean isValidDateOrder() {
         if (startDate == null || endDate == null) return true;
-        return endDate.isAfter(startDate);
+        return RentalPeriod.isInOrder(startDate, endDate);
     }
 
-    @AssertTrue(message = "Rental duration must be between 3 and 21 days")
+    @AssertTrue(message = "Rental duration must be between " + RentalPeriod.MIN_DAYS + " and " + RentalPeriod.MAX_DAYS + " days")
     public boolean isDurationValid() {
         if (startDate == null || endDate == null) return true;
-        long days = ChronoUnit.DAYS.between(startDate, endDate);
-        return days >= 3 && days <= 21;
+        return RentalPeriod.hasAllowedLength(startDate, endDate);
+    }
+
+    public RentalPeriod period() {
+        return new RentalPeriod(startDate, endDate);
     }
 }
