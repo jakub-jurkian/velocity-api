@@ -5,14 +5,11 @@ import com.velocity.api.common.exception.DomainValidationException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
-/**
- * The dates a bike is rented for. {@code endDate} is exclusive, matching both the pricing
- * ({@code days = endDate - startDate}) and the {@code [)} bounds of the exclusion constraint
- * in ADR-001, so back-to-back rentals do not collide.
- *
- * <p>The single home of the 3-21 day rule: the booking request, the availability endpoint and
- * the {@link Reservation} entity all go through this type instead of repeating the numbers.
- */
+// The dates a bike is rented for. endDate is exclusive, matching both the pricing
+// days = endDate - startDate and the  [) bounds of the exclusion constraint
+// in ADR-001, so back-to-back rentals do not collide.
+// The single home of the 3-21 day rule: the booking request, the availability endpoint and
+// the Reservation entity all go through this type instead of repeating the numbers.
 public record RentalPeriod(LocalDate startDate, LocalDate endDate) {
     public static final int MIN_DAYS = 3;
     public static final int MAX_DAYS = 21;

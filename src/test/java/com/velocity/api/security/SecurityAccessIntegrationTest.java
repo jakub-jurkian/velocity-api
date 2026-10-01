@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import static com.velocity.api.security.SecurityTestHelper.asUser;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -89,6 +90,7 @@ public class SecurityAccessIntegrationTest extends AbstractApiIntegrationTest {
         mockMvc.perform(get("/api/v1/admin/bikes?sort=city,bikeModel.name,id,asc")
                         .with(asUser(UUID.randomUUID().toString(), "ADMIN")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(1));
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].bikeModelName", startsWith("Integration Test Model")));
     }
 }

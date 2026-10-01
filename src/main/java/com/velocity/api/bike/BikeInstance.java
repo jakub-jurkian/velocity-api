@@ -45,10 +45,9 @@ public class BikeInstance {
         this.status = BikeStatus.ACTIVE; // Default state for a new physical bike
     }
 
-    /**
-     * Whether a client from {@code clientCity} may book this bike. Date availability is a
-     * separate question, answered by the reservations table.
-     */
+
+    // Whether a client from clientCity may book this bike. Date availability is a
+    // separate question, answered by the reservations table.
     public void assertBookableIn(City clientCity) {
         if (this.status != BikeStatus.ACTIVE) {
             throw new InvalidBikeStateException("The bike does not have ACTIVE status.");

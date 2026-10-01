@@ -18,7 +18,7 @@ public record BikeInstanceResponse(
                 bike.getId(),
                 bike.getStatus(),
                 bike.getCity(),
-                bike.getBikeModelName(),
+                bike.getBikeModel().getName(),
                 bike.getVersion()
         );
     }
