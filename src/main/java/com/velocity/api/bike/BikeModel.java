@@ -44,7 +44,7 @@ public class BikeModel {
         this.speed = speed;
         this.range = range;
         this.capacity = capacity;
-        this.category = requireNonNull(category, "Category");
+        this.category = requireNonNull(category);
     }
 
     private String normalizeAndValidateName(String name) {
@@ -81,9 +81,9 @@ public class BikeModel {
             throw new DomainValidationException("Capacity must be between 1 and 100.");
     }
 
-    private <T> T requireNonNull(T value, String fieldName) {
+    private <T> T requireNonNull(T value) {
         if (value == null) {
-            throw new DomainValidationException(fieldName + " is required.");
+            throw new DomainValidationException("Category" + " is required.");
         }
         return value;
     }

@@ -25,10 +25,8 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Reservation {
-    /**
-     * How long a PENDING reservation holds its bike without being confirmed. After that it
-     * can no longer be confirmed, and the scheduler expires it.
-     */
+    // How long a PENDING reservation holds its bike without being confirmed. After that it
+    // can no longer be confirmed, and the scheduler expires it.
     public static final Duration CONFIRMATION_WINDOW = Duration.ofMinutes(30);
     static final String EXPIRED_REASON = "Not confirmed within " + CONFIRMATION_WINDOW.toMinutes() + " minutes";
 
@@ -71,10 +69,8 @@ public class Reservation {
         this.status = newStatus;
     }
 
-    /**
-     * The customer's confirmation. Refused once the confirmation window has passed, even if
-     * the scheduler has not expired the reservation yet.
-     */
+    // The customer's confirmation. Refused once the confirmation window has passed, even if
+    // the scheduler has not expired the reservation yet.
     public void confirm(Instant now) {
         if (this.status == ReservationStatus.CONFIRMED) return;
 
@@ -89,14 +85,12 @@ public class Reservation {
         this.status = ReservationStatus.CONFIRMED;
     }
 
-    /**
-     * System cancellation of a reservation nobody confirmed. Not the customer's cancel: the
-     * late-cancel rule does not apply, because a booking made late in the evening for the next
-     * day only goes stale after midnight, when its start date is already today.
-     *
-     * <p>A no-op when the reservation is no longer PENDING - the customer confirmed or
-     * cancelled it between the scheduler's query and this call.
-     */
+
+    // System cancellation of a reservation nobody confirmed. Not the customer's cancel: the
+    // late-cancel rule does not apply, because a booking made late in the evening for the next
+    // day only goes stale after midnight, when its start date is already today.
+    // A no-op when the reservation is no longer PENDING - the customer confirmed or
+    // canceled it between the scheduler's query and this call.
     public void expire(Instant now) {
         if (this.status != ReservationStatus.PENDING) return;
 

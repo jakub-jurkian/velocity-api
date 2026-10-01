@@ -26,7 +26,7 @@ public class AuthController {
             summary = "Register a new user",
             description = "Creates a new user account with default USER privileges."
     )
-    @SecurityRequirements // Clears the global security requirement for all methods here
+    @SecurityRequirements // Clears the global security requirement for all methods here (Swagger) - This specific endpoint is public
     public ResponseEntity<UserRegistrationResponse> registerUser(@Valid @RequestBody UserRegistrationRequest request) {
         UserRegistrationResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

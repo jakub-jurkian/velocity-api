@@ -1,6 +1,6 @@
 # VeloCity Fleet API — Project Context
 
-Last updated: 2026-09-26
+Last updated: 2026-09-30
 
 This file is the single source of truth for the project. It reflects the repo state, the architectural decisions captured in ADRs, and the current implementation status for the backend service that powers the VeloCity frontend.
 
@@ -8,15 +8,15 @@ Per ADR-003 this file is living documentation: it is updated at the end of each 
 
 ## 0. Where the code actually is
 
-**`main` @ `58865fc`** (= `origin/main`) — everything through PR #118 plus the CD pipeline commit. There are no unmerged branches and no uncommitted work; everything below describes `main`.
+**`main` @ `24bd1ff`** (= `origin/main`) — everything through PR #130. Everything below describes `main`.
 
-The earlier split (the bike-status conflict guard uncommitted, the pre-deploy hardening on a separate branch) is resolved: #115 merged the conflict guard, #116 merged the hardening, #118 added the deployment setup.
+#121-#129 are the fixes from the 2026-09-24 review (login email, reservation expiry and city check, test infrastructure, API contract, admin bike endpoints). They were merged as a stack; squash-merging it dropped changes during conflict resolution and broke the build from #125 to #129, and #130 restored the tested state. See section 15 for the merge rule this led to.
 
 **Deployed.** The `prod` profile runs on an Oracle Cloud (OCI) ARM VM behind Caddy:
 - API: `https://api.velocityfleet.dev` (Swagger UI at `/api/swagger-ui.html`)
 - frontend: `https://www.velocityfleet.dev` (Vercel, repo `velocity-client`)
 
-Every push to `main` builds a `linux/arm64` image, pushes it to GHCR, and redeploys over SSH (`.github/workflows/deploy.yml`).
+Every push to `main` builds a `linux/arm64` image, pushes it to GHCR, and redeploys over SSH (`.github/workflows/deploy.yml`). The deploy job only runs if the image builds, so a commit that does not compile never reaches the server. The live instance runs #130.
 
 ## 1. Project goal
 
@@ -34,7 +34,7 @@ The core product workflow is:
 
 ## 2. Current implementation status
 
-Feature-complete for the demo flow and deployed. The error contract is settled, the concurrency guarantee is in place and proven by test, and the domain model enforces its own invariants. The 2026-09-24 review found several open defects; they are listed in section 13.
+Feature-complete for the demo flow and deployed. The error contract is settled, the concurrency guarantee is in place and proven by test, and the domain model enforces its own invariants. Most defects from the 2026-09-24 review are fixed (#121-#130); the remaining ones are listed in section 13.
 
 Implemented on `main`:
 - JWT authentication with per-request account-status enforcement
@@ -42,7 +42,9 @@ Implemented on `main`:
 - user registration, login, logout, profile updates, admin user lifecycle
 - fleet counts and date-range availability with server-side pricing
 - reservation creation, ownership checks, lifecycle transitions, scheduled jobs
+- reservation expiry after a 30-minute confirmation window, and bookings restricted to the client's own city
 - admin bike-status changes with optimistic locking and a conflict guard (section 8a)
+- allow-listed sorting with default orders on every paginated endpoint
 - admin analytics aggregates
 - ProblemDetail error handling, including 401/403 semantics and framework-level 4xx mapping
 - Postgres-backed reservation integrity via an exclusion constraint
@@ -50,13 +52,13 @@ Implemented on `main`:
 - Actuator health endpoint (`/actuator/health`, details hidden)
 - multi-stage Dockerfile (non-root runtime user, `prod` profile pinned), production Compose stack, Caddy reverse proxy
 - a `prod`-context demo seed that re-anchors itself to the current date on every boot (see DEMO.md)
-- concurrency, integration, repository and domain tests on Testcontainers (61 tests, green)
+- concurrency, integration, repository and domain tests on Testcontainers (101 tests, green)
 
 Not implemented:
 - structured logging, request/correlation IDs
 - rate limiting on the auth endpoints
 - refresh tokens
-- tests for `AdminUserService`/`AdminUserController`, `BikeInstance` transitions, `AnalyticsService`, `cancelReservation`, logout revocation, and the availability query
+- tests for the admin business logic (`AdminUserService`, `FleetService.updateBikeStatus`), `BikeInstance.transitionTo`, `AnalyticsService`, `cancelReservation`, logout revocation, and the availability query
 
 ## 3. Tech stack
 
@@ -94,17 +96,22 @@ Local build note: `JAVA_HOME` must point at an installed JDK 25. A stale value (
 com.velocity.api
 ├── analytics    controller, service, dto
 ├── auth         controller, service, dto
-├── bike         entities, controller, service, repository (+projection), dto, exception
-├── common       City, JsonNullables, dto (PaginatedResponse), exception (GlobalExceptionHandler,
-│                ResourceNotFoundException, DomainValidationException)
+├── bike         entities, controller (FleetController, AdminFleetController), service (FleetService),
+│                repository (+projections), dto, exception
+├── common       City, JsonNullables, dto (PaginatedResponse), web (SortableFields),
+│                exception (GlobalExceptionHandler, ResourceNotFoundException,
+│                DomainValidationException, InvalidSortException)
 ├── config       ClockConfig, OpenApiConfig, SecurityConfig, SchedulingConfig
-├── pricing      RentalCostCalculator, PricingProperties, dto (RentalQuote), exception
-├── reservation  entity, controller, service, repository (+projections), dto, mapper, scheduler, exception
+├── pricing      RentalCostCalculator, PricingProperties, dto (RentalQuote)
+├── reservation  entities (Reservation, RentalPeriod), controller, service, repository (+projections),
+│                dto, mapper, scheduler, exception
 ├── security     CustomUserDetails(+Service), JwtService, JwtAuthenticationFilter,
 │                DelegatingAuthenticationEntryPoint, DelegatingAccessDeniedHandler,
 │                repository (TokenBlacklistRepository)
 └── user         entity, controller (User + AdminUser), service, repository, dto, exception
 ```
+
+Admin endpoints are guarded twice: `@PreAuthorize("hasRole('ADMIN')")` on the controller class and on the service methods, so a new endpoint that calls an admin service cannot skip the check.
 
 Architectural rules visible in the codebase:
 - controllers are thin HTTP adapters
@@ -225,7 +232,7 @@ Booking path (`ReservationService.book`): load user and bike, `bike.assertBookab
 
 Ownership: `getUserReservation`, `confirmReservation` and `cancelReservation` load via `findByIdAndUserId(...)`, so a reservation belonging to another user returns **404** rather than confirming the row exists.
 
-## 8a. Admin bike-status conflict guard (merged in #115)
+## 8a. Admin bike-status conflict guard (#115, moved to the bike package in #129)
 
 Taking a bike out of service used to silently strand whatever reservations were on it. This closes that.
 
@@ -238,7 +245,7 @@ Taking a bike out of service used to silently strand whatever reservations were 
 - `PATCH /api/v1/admin/bikes/{id}/status` takes `?force=true|false`, defaulting to false.
 - Changelog `012` adds a nullable `cancellation_reason VARCHAR(255)` to `reservations`.
 
-Still open: the path is untested, and it can race a concurrent booking (section 13).
+Access control is covered by `SecurityAccessIntegrationTest` (CLIENT → 403, bike unchanged). Still open: the service logic (version mismatch, conflicts, `force`) has no tests, and a status change can race a concurrent booking (section 13).
 
 ## 9. API surface
 
@@ -340,13 +347,13 @@ Explicitly rejected anti-patterns: anemic entities with public setters; pessimis
 
 ## 12. Testing strategy
 
-96 tests, green on a clean build, in about a minute.
+101 tests, green on a clean build, in about a minute.
 
 - domain unit tests: `ReservationTest` (transition matrix, confirm/expire windows), `RentalPeriodTest`, `BikeInstanceTest`, `UserTest`
 - pricing unit tests: `RentalCostCalculatorTest` with tier boundaries at 7, 8, 14, 15 and 21 days
 - service unit tests with Mockito: `ReservationServiceTest`, `UserServiceTest`, `AuthServiceTest`
 - security unit tests: `JwtServiceTest` (forgery, expiry, unique jti), `JwtAuthenticationFilterTest`
-- full-application tests extending `AbstractApiIntegrationTest`: `ReservationIntegrationTest`, `ReservationConcurrencyIntegrationTest`, `ReservationSchedulerIntegrationTest` (including the midnight expiry case), `SecurityAccessIntegrationTest` (401/403 matrix, sort allow-list), `UserControllerTest`, `VelocityApiApplicationTests`
+- full-application tests extending `AbstractApiIntegrationTest`: `ReservationIntegrationTest`, `ReservationConcurrencyIntegrationTest`, `ReservationSchedulerIntegrationTest` (including the midnight expiry case), `SecurityAccessIntegrationTest` (401/403/200 matrix including the admin bike endpoints, sort allow-list), `UserControllerTest`, `VelocityApiApplicationTests`
 - repository slice test: `ReservationRepositoryTest` (`@DataJpaTest`)
 
 The concurrency test is the centrepiece: two threads released by a `CountDownLatch` POST the same booking and the suite asserts exactly one 201 and one 409.
@@ -361,7 +368,7 @@ Containers and contexts: `BaseIntegrationTest` starts Postgres and Redis once pe
 
 ## 13. Known gaps and watchpoints
 
-Accurate as of the 2026-09-24 review, updated 2026-09-28. Items marked *reproduced* were confirmed against a running instance or the test suite. Do not describe these as working.
+Accurate as of the 2026-09-24 review, updated 2026-09-30 after #121-#130. Items marked *reproduced* were confirmed against a running instance or the test suite. Do not describe these as working.
 
 **Defects — reproduced**
 - The JWT subject is the email, which admins can change. After an admin renames a user, a new registration with the old email makes the old token resolve to the new account. The subject should be the user's UUID.
@@ -387,7 +394,7 @@ Accurate as of the 2026-09-24 review, updated 2026-09-28. Items marked *reproduc
 - No structured logging and no request/correlation ID. `AuthService.register` logs the user's email.
 
 **Testing**
-- `AdminUserService` / `AdminUserController` have no tests: block/unblock, self-demotion, role change, update conflicts, and the whole bike-status path (version mismatch, 409 conflicts, `force`).
+- The admin business logic has no tests: block/unblock, self-demotion, role change, update conflicts (`AdminUserService`), and the bike-status path (version mismatch, 409 conflicts, `force`) in `FleetService`. Only access control is tested.
 - Also untested: `BikeInstance.transitionTo`, `AnalyticsService`, `cancelReservation`, the `findAvailableModels` native query, logout followed by a rejected token, and the `invalidFields` response shape.
 - Dev-seed and test dates are hardcoded in 2026 and have begun to fall into the past.
 
@@ -417,11 +424,19 @@ The React client lives in a sibling repository and is a presentation layer only.
 - commit style: `type(#issue): summary`, e.g. `fix: adjust calculator & pricing logic according to github issue (#101)`
 - ADRs are added for decisions that would otherwise be re-litigated
 - this file is updated when core decisions or contracts change
+- stacked PRs (a branch built on another unmerged branch) are merged with a merge commit, or rebased onto the new `main` and re-tested before a squash merge. Squashing a stack without that is what broke `main` between #125 and #130.
 
 ## 16. Recent merged work
 
 | PR | Change |
 |---|---|
+| #130 | restores six files that lost changes while the #123-#129 stack was squash-merged; `main` compiles and deploys again |
+| #129 | `AdminFleetController` (`/api/v1/admin/bikes`) and `FleetService` take over bike admin from the `user` package; ADMIN guard on controller and service; bike DTOs in `bike/dto` |
+| #127 | sort allow-lists (`SortableFields`) and default sorts; Redis excluded from health; logout 503 when Redis is down; `expiresIn` in seconds; `Location` header and `GET /reservations/{id}`; `@Future` on the application clock; code cleanups |
+| #125 | singleton Testcontainers, `AbstractApiIntegrationTest`, `MutableClock`; 6 → 2 Spring contexts; `SecurityAccessIntegrationTest` replaces the helper-only auth test |
+| #123 | `Reservation.expire`/`confirm` with a 30-minute window, `RentalPeriod`, `BikeInstance.assertBookableIn` (status + city) |
+| #121 | login normalises the email (trim + lowercase) |
+| #119 | README and DEMO.md rewritten for the deployed state |
 | — (`58865fc`) | CD pipeline: `deploy.yml` builds an arm64 image to GHCR and deploys to the OCI VM over SSH; `docker-compose.prod.yaml`; Caddy reverse proxy with HTTPS; local `docker-compose.yaml` reduced to Postgres + Redis |
 | #118 | `InvalidTokenException` separates expired/revoked tokens from wrong passwords; Dockerfile (multi-stage, non-root, `prod` pinned); Actuator health; prod demo seed; DEMO.md |
 | #116 | pre-deploy hardening: `ddl-auto: validate` at the right key, Europe/Warsaw `Clock`, Redis timeouts and fail-open reads, unmapped integrity violations → 500, 23P01 mapping, `CannotAcquireLockException` handler, password composition rule; README and this file realigned |
@@ -441,4 +456,4 @@ The React client lives in a sibling repository and is a presentation layer only.
 
 VeloCity is a backend built around one integrity problem: a bike must never be double-booked for overlapping dates, even under concurrency. The exclusion constraint, the rich domain model, the JWT layer and the lifecycle automation all serve that guarantee.
 
-The architecture is settled, the error contract is largely complete, and the app is deployed with a self-resetting demo. The open work is, in order: the rest of the auth fixes (the email-based JWT subject, tokens on public endpoints), the bike-status/booking race together with the admin-surface tests, CI, and the demo's exposure of visitor data.
+The architecture is settled, the error contract is largely complete, and the app is deployed with a self-resetting demo. The open work is, in order: the rest of the auth fixes (the email-based JWT subject, tokens on public endpoints), the bike-status/booking race together with the admin business-logic tests, CI, and the demo's exposure of visitor data.

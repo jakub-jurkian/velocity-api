@@ -34,7 +34,7 @@ jobs:
           context: .
           tags: ghcr.io/jakub-jurkian/velocity-api:latest
           push: true
-  #its only purpose is to SSH into your OCI machine and run terminal commands
+  #its only purpose is to SSH into OCI machine and run terminal commands
   deploy-to-oci:
     runs-on: ubuntu-latest
     needs: build-and-push

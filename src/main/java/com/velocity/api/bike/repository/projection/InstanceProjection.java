@@ -9,6 +9,11 @@ public interface InstanceProjection {
     UUID getId();
     City getCity();
     BikeStatus getStatus();
-    String getBikeModelName();
+    ModelName getBikeModel();
     Long getVersion();
+
+    // Nested projection: only the model's name is read, not the whole BikeModel
+    interface ModelName {
+        String getName();
+    }
 }
