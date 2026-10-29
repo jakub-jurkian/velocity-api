@@ -1,0 +1,21 @@
+name: Nightly demo reset
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # 02:00 UTC = 03:00 in Poland
+
+  workflow_dispatch: # manual "Run workflow" button
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restart the API (runAlways seed changesets restore the demo state)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: ${{ secrets.OCI_USERNAME }}
+          key: ${{ secrets.OCI_SSH_KEY }}
+          script: |
+            cd ~/velocity-api
+            docker compose -f docker-compose.prod.yaml restart api
