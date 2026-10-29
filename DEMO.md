@@ -6,7 +6,7 @@ double-booked, a rental cannot be cancelled once it has started, a retired bike 
 and an admin cannot quietly take a bike off the road while a customer still has it. The fixtures
 below exist to put each of those rules in front of you.
 
-The live demo resets to its scripted state every night at 04:00 (Polish time).
+The live demo resets to its scripted state every night at 03:00 (Polish time).
 If something looks broken, it was probably changed by another visitor.
 
 ## Start it
@@ -66,8 +66,7 @@ right now" back to right now and undo whatever the previous visitor changed. Tha
 is the point, and the reason this must never be pointed at a database holding real bookings.
 
 A restart is therefore the reset: stop and start `./mvnw spring-boot:run` locally, or see
-[Running it on a server](#running-it-on-a-server) for the deployed stack. Accounts that visitors
-register are not removed by a restart.
+[Running it on a server](#running-it-on-a-server) for the deployed stack. Accounts you register are deleted at the nightly reset.
 
 ## Accounts
 

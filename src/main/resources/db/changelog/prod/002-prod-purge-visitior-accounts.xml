@@ -1,0 +1,18 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="jakub-jurkian" id="002-prod-purge-visitor-accounts" context="prod"
+               runAlways="true" runOnChange="true">
+        <comment>Visitor accounts are removed on every reset: the public demo must not keep
+            personal data indefinitely, and admins (whose passwords are public) can see the user list.</comment>
+        <sql>
+            DELETE FROM users
+            WHERE id NOT IN (
+                -- the six seeded demo accounts from 002-prod-demo-accounts
+                             '3e2d1c0b-9f8e-4a7b-6c5d-4f3e2d1c0b9a', '1f0e9d8c-7b6a-4958-9473-2615043a8b9c', '4f2c9a1b-7e8d-43c2-9f1e-5a8b7c2d3e4f', 'd8b2e1f4-9c3a-4e7f-8a12-6f3b9c8d2e1a', '2a3b4c5d-6e7f-4809-91a2-b3c4d5e6f708', '9c8b7a69-5847-4362-8150-f4e3d2c1b0a9'
+                );
+        </sql>
+    </changeSet>
+</databaseChangeLog>
