@@ -6,6 +6,9 @@ double-booked, a rental cannot be cancelled once it has started, a retired bike 
 and an admin cannot quietly take a bike off the road while a customer still has it. The fixtures
 below exist to put each of those rules in front of you.
 
+The live demo resets to its scripted state every night at 04:00 (Polish time).
+If something looks broken, it was probably changed by another visitor.
+
 ## Start it
 
 ### Option A - the live instance (nothing to install)

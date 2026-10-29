@@ -1,6 +1,9 @@
 services:
   api:
     image: ghcr.io/jakub-jurkian/velocity-api:latest
+    # If Oracle reboots the VM or a container dies, everything comes back on its own.
+    # Without this, an unplanned reboot takes the demo down until noticed.
+    restart: unless-stopped
     ports:
       - "8080:8080"
     depends_on:
@@ -19,6 +22,7 @@ services:
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
@@ -36,6 +40,7 @@ services:
       - redis-data:/data
   reverse-proxy:
     image: caddy:latest
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"

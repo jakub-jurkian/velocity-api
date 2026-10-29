@@ -45,7 +45,7 @@ A naive "check if it's free, then save" fails here - both requests see the bike 
 
 ## Architecture
 
-A modular monolith with a standard three-layer structure: each request flows from the controller down to the database, with each layer owning one job.
+A monolith with a standard three-layer structure: each request flows from the controller down to the database, with each layer owning one job.
 
 ```mermaid
 flowchart LR
